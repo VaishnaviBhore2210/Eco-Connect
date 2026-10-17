@@ -20,6 +20,13 @@ public class WasteListingService {
         return repository.save(listing);
     }
 
+    public WasteListing updateStatus(Long id, String status) {
+        WasteListing listing = repository.findById(id)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Waste listing not found."));
+        listing.setStatus(status);
+        return repository.save(listing);
+    }
+
     public List<WasteListing> getAllListings() {
         return repository.findAll();
     }
