@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import RegisterPage from './RegisterPage.jsx'
 import './App.css'
+import Footer from './components/footer';
 
 const roleLabels = {
   URBAN_WASTE_GENERATOR: 'Urban Waste Generator',
@@ -14,10 +15,10 @@ const workflow = [
   { number: '04', title: 'Measure impact', text: 'Generators and administrators track collection progress and community impact.' },
 ]
 const initialMetrics = [
-  { value: '500+', label: 'households connected' },
-  { value: '36', label: 'cooperatives active' },
+  { value: '50', label: 'households connected' },
+  { value: '10', label: 'cooperatives active' },
   { value: '12T', label: 'organic waste diverted' },
-  { value: '92%', label: 'pickup success rate' },
+  { value: '96%', label: 'pickup success rate' },
 ]
 
 function HomePage({ onJoin, onListWaste }) {
@@ -35,6 +36,7 @@ function HomePage({ onJoin, onListWaste }) {
     <section className="role-section"><div className="section-heading"><p className="eyebrow">Built for the full ecosystem</p><h2>One platform, roles with a purpose.</h2></div><div className="role-grid"><article className="role-card"><div className="role-icon">🏙️</div><h3>Urban Waste Generator</h3><p>Create waste listings, follow pickup progress, and see your contribution to a circular economy.</p></article><article className="role-card"><div className="role-icon">🌾</div><h3>Cooperative Coordinator</h3><p>Review available listings, accept pickup requests, and update collection status.</p></article><article className="role-card"><div className="role-icon">🛠️</div><h3>Administrator</h3><p>Review platform activity and oversee waste listings and collection progress.</p></article></div></section>
     <section className="workflow-section"><div className="section-heading"><p className="eyebrow">How it works</p><h2>From waste listing to impact creation.</h2></div><div className="workflow-grid">{workflow.map((step) => <article className="workflow-card" key={step.number}><span className="step-number">{step.number}</span><h3>{step.title}</h3><p>{step.text}</p></article>)}</div></section>
     <section className="impact-section"><div className="impact-copy"><p className="eyebrow">Why EcoConnect matters</p><h2>Turning everyday organic waste into cleaner cities and stronger livelihoods.</h2><p>EcoConnect helps reduce landfill waste, improve local processing, and support cooperatives through coordinated collection.</p><ul className="feature-list"><li>Smart waste matching across locations</li><li>Pickup tracking and status visibility</li><li>Environmental impact reporting</li><li>Capacity-aware cooperative management</li></ul></div><div className="impact-panel"><div className="panel-box"><span>Step 01</span><strong>List</strong><small>Generators post available organic waste</small></div><div className="panel-box muted"><span>Step 02–03</span><strong>Collect</strong><small>Cooperatives coordinate and track pickup</small></div><div className="panel-box highlight"><span>Step 04</span><strong>Measure</strong><small>Track collection and community impact</small></div></div></section>
+      <Footer />
   </>
 }
 
