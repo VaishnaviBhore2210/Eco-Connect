@@ -1,7 +1,8 @@
 .eco-app {
-  width: min(1200px, calc(100% - 32px));
+  width: min(1440px, calc(100% - 24px));
   margin: 0 auto;
-  padding: 24px 0 56px;
+  padding: 12px 0 36px;
+  box-sizing: border-box;
 }
 
 .topbar {
@@ -773,8 +774,9 @@
 
 @media (max-width: 640px) {
   .eco-app {
-    width: min(100% - 20px, 1200px);
-    padding-top: 20px;
+    width: calc(100% - 16px);
+    padding-top: 8px;
+    padding-bottom: 24px;
   }
 
   .topbar {
@@ -940,3 +942,52 @@
 .site-footer { padding: 28px 20px; text-align: center; color: #74837a; font-size: 13px; }
 .topbar-user { display: flex; align-items: center; gap: 12px; color: #345347; font-size: 14px; }
 @media (max-width: 720px) { .auth-page-centered { padding: 28px 14px; } .auth-card-centered { border-radius: 18px; padding: 24px 18px; } .dashboard-welcome, .dashboard-action-banner { align-items: flex-start; flex-direction: column; } .topbar-user { gap: 6px; flex-direction: column; align-items: flex-end; } }
+
+
+/* Rounded, compact styling for the reusable Navbar component */
+.eco-navbar {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 auto 14px;
+  border-radius: 22px;
+  overflow: visible;
+}
+
+.eco-nav-inner {
+  width: 100%;
+  max-width: none;
+  min-height: 66px;
+  box-sizing: border-box;
+  padding: 10px 22px;
+  border-radius: 22px;
+}
+
+.eco-nav-links {
+  gap: 6px;
+}
+
+.eco-nav-links a,
+.eco-nav-links button,
+.eco-join-button {
+  border-radius: 999px;
+}
+
+.eco-profile-wrap {
+  border-radius: 999px;
+}
+
+.eco-dropdown {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+@media (max-width: 640px) {
+  .eco-navbar,
+  .eco-nav-inner {
+    border-radius: 18px;
+  }
+
+  .eco-nav-inner {
+    padding: 10px 14px;
+  }
+}
