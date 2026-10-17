@@ -34,6 +34,10 @@ public class WasteListing {
     @Column(nullable = false)
     private String status = "AVAILABLE";
 
+    // Email of the user who created this waste listing
+    @Column(name = "created_by_email")
+    private String createdByEmail;
+
     private LocalDateTime createdAt;
 
     public WasteListing() {
@@ -104,6 +108,14 @@ public class WasteListing {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getCreatedByEmail() {
+        return createdByEmail;
+    }
+
+    public void setCreatedByEmail(String createdByEmail) {
+        this.createdByEmail = createdByEmail;
     }
 
     public LocalDateTime getCreatedAt() {
