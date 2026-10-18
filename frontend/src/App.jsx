@@ -1,8 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import RegisterPage from './RegisterPage.jsx'
 import './App.css'
 import Navbar from './components/Navbar';
 import Footer from './components/footer';
+import {
+  FindCooperativesPage,
+  ImpactReportsPage,
+  PickupHistoryPage,
+  UrbanProfilePage,
+  WasteGuidePage,
+} from './components/UrbanGeneratorPages.jsx'
 
 
 const roleLabels = {
@@ -10,6 +17,34 @@ const roleLabels = {
   COOPERATIVE_COORDINATOR: 'Cooperative Coordinator',
   ADMIN: 'Administrator',
 }
+const completedListingStatuses = new Set(['COLLECTED', 'COMPLETED', 'CLOSED'])
+const pendingListingStatuses = new Set(['AVAILABLE', 'PENDING'])
+
+function getListingCreationTime(listing) {
+  const timestamp = Date.parse(listing.createdAt || '')
+  return Number.isNaN(timestamp) ? 0 : timestamp
+}
+
+function sortGeneratorListings(listings) {
+  return [...listings].sort((first, second) => {
+    const firstStatus = String(first.status || '').toUpperCase()
+    const secondStatus = String(second.status || '').toUpperCase()
+    const firstCompleted = completedListingStatuses.has(firstStatus)
+    const secondCompleted = completedListingStatuses.has(secondStatus)
+
+    if (firstCompleted !== secondCompleted) return firstCompleted ? 1 : -1
+
+    if (!firstCompleted) {
+      const firstPending = pendingListingStatuses.has(firstStatus)
+      const secondPending = pendingListingStatuses.has(secondStatus)
+      if (firstPending !== secondPending) return firstPending ? -1 : 1
+    }
+
+    return getListingCreationTime(second) - getListingCreationTime(first)
+      || Number(second.id || 0) - Number(first.id || 0)
+  })
+}
+
 const workflow = [
   { number: '01', title: 'Create a waste listing', text: 'Urban users add waste type, quantity, and pickup location in minutes.' },
   { number: '02', title: 'Match with a cooperative', text: 'EcoConnect helps coordinators find available waste listings that fit their location and capacity.' },
@@ -58,29 +93,126 @@ function RoleChooser({ onChoose, onBack }) {
   return <section className="auth-page-centered"><div className="auth-card-centered role-chooser-card"><p className="eyebrow">Create your account</p><h2>Choose your role</h2><p className="form-intro">Choose how you will use EcoConnect. Administrator access is managed separately.</p><div className="role-choice-list">{options.map((item) => <button type="button" key={item.value} className="role-choice" onClick={() => onChoose(item.value)}><span className="role-choice-icon">{item.icon}</span><span className="role-choice-copy"><strong>{item.title}</strong><small>{item.description}</small></span><span className="role-choice-arrow">→</span></button>)}</div><button type="button" className="text-button" onClick={onBack}>← Back</button></div></section>
 }
 
-function RoleDashboard({ user, listings, onCreate, onChangeStatus, busy }) {
+function RoleDashboard({ user, listings, onCreate, onChangeStatus, onPickupHistory, onEditListing, onDeleteListing, deletingListingId, busy, error }) {
   const role = user?.role || 'URBAN_WASTE_GENERATOR'
   const isAdmin = role === 'ADMIN'
   const isCoordinator = role === 'COOPERATIVE_COORDINATOR'
+  const isUrbanGenerator = role === 'URBAN_WASTE_GENERATOR'
   const ownHeading = isAdmin ? 'Administrator dashboard' : isCoordinator ? 'Cooperative dashboard' : 'Urban generator dashboard'
-  const visibleListings = role === 'URBAN_WASTE_GENERATOR' ? listings.filter((item) => item.createdByEmail && item.createdByEmail.toLowerCase() === String(user?.email || '').toLowerCase()) : listings
+  const visibleListings = isUrbanGenerator ? sortGeneratorListings(listings) : listings
+  const completedListings = isUrbanGenerator
+    ? visibleListings.filter((listing) => completedListingStatuses.has(String(listing.status || '').toUpperCase()))
+    : []
+  const activeListings = isUrbanGenerator
+    ? visibleListings.filter((listing) => !completedListingStatuses.has(String(listing.status || '').toUpperCase()))
+    : visibleListings
   const count = (status) => visibleListings.filter((item) => String(item.status || '').toUpperCase() === status).length
-  const completed = count('COLLECTED') + count('COMPLETED')
-  return <section className="screen-shell role-dashboard-shell"><div className="dashboard-welcome"><div><p className="eyebrow">Your EcoConnect workspace</p><h1>{ownHeading}</h1><p>Welcome, {user?.fullName || 'EcoConnect member'}.</p></div></div><div className="dashboard-role-pill">{roleLabels[role] || roleLabels.URBAN_WASTE_GENERATOR} · {user?.email}</div><div className="dashboard-grid"><div className="panel-card stat-panel"><span>Total listings</span><strong>{visibleListings.length}</strong></div><div className="panel-card stat-panel"><span>Awaiting pickup</span><strong>{count('AVAILABLE') + count('PENDING')}</strong></div><div className="panel-card stat-panel"><span>In progress</span><strong>{count('ACCEPTED') + count('SCHEDULED') + count('IN_PROGRESS')}</strong></div><div className="panel-card stat-panel"><span>Collected</span><strong>{completed}</strong></div></div>
-    {role === 'URBAN_WASTE_GENERATOR' && <div className="dashboard-action-banner"><div><h3>Create a waste listing</h3><p>Tell nearby cooperatives what organic waste is ready for collection.</p></div><button className="primary-button" onClick={onCreate}>+ Create listing</button></div>}
+  const completed = isUrbanGenerator
+    ? completedListings.length
+    : count('COLLECTED') + count('COMPLETED')
+  const renderListingCards = (group) => (
+    <div className="listing-grid">{group.map((item) => {
+      const status = String(item.status || '').toUpperCase()
+      const canManage = isUrbanGenerator && (status === 'AVAILABLE' || status === 'PENDING')
+      return (
+        <article className="panel-card listing-card" key={item.id}>
+          <div className="listing-topline">
+            <span className="listing-tag">{item.wasteType}</span>
+            <span className={`status-pill status-${status.toLowerCase()}`}>{status.replaceAll('_', ' ')}</span>
+          </div>
+          <h3>{item.quantityKg} kg</h3>
+          <p>{item.location}</p>
+          {item.description && <p>{item.description}</p>}
+          <div className="listing-meta"><span>Contact</span><strong>{item.contactName || 'EcoConnect user'}</strong></div>
+          {(isCoordinator || isAdmin) && <div className="listing-status-actions">{status === 'AVAILABLE' && <button className="secondary-button" onClick={() => onChangeStatus(item.id, 'ACCEPTED')}>Accept pickup</button>}{['ACCEPTED', 'SCHEDULED'].includes(status) && <button className="secondary-button" onClick={() => onChangeStatus(item.id, 'IN_PROGRESS')}>Start pickup</button>}{status === 'IN_PROGRESS' && <button className="primary-button" onClick={() => onChangeStatus(item.id, 'COLLECTED')}>Mark collected</button>}</div>}
+          {isUrbanGenerator && (
+            <div className="listing-owner-actions">
+              {canManage ? (
+                <>
+                  <button type="button" className="secondary-button" onClick={() => onEditListing(item)}>Edit</button>
+                  <button type="button" className="listing-delete-button" onClick={() => onDeleteListing(item)} disabled={deletingListingId !== null}>
+                    {deletingListingId === item.id ? 'Deleting…' : 'Delete'}
+                  </button>
+                </>
+              ) : <p className="listing-edit-restriction">Editing and deletion are unavailable after pickup processing starts.</p>}
+            </div>
+          )}
+        </article>
+      )
+    })}</div>
+  )
+  const listingContent = busy
+    ? <p className="form-intro" role="status">Loading waste listings…</p>
+    : visibleListings.length === 0
+      ? error
+        ? <p className="listing-load-error" role="alert">{error}</p>
+        : <div className="empty-state panel-card"><span>♻️</span><h3>No waste listings yet</h3><p>{isCoordinator ? 'New listings from generators will appear here.' : 'Create the first listing to start the collection process.'}</p>{role === 'URBAN_WASTE_GENERATOR' && <button className="primary-button" onClick={onCreate}>Create a listing</button>}</div>
+      : <>
+          {error && <p className="listing-load-error" role="alert">{error}</p>}
+          {isUrbanGenerator ? (
+            <>
+              {activeListings.length > 0 && <section className="dashboard-listing-group"><h3>Active &amp; Recent Listings</h3>{renderListingCards(activeListings)}</section>}
+              {completedListings.length > 0 && <section className="dashboard-listing-group"><h3>Completed Listings</h3>{renderListingCards(completedListings)}</section>}
+            </>
+          ) : renderListingCards(visibleListings)}
+        </>
+  return <><section className="screen-shell role-dashboard-shell"><div className="dashboard-welcome"><div><p className="eyebrow">Your EcoConnect workspace</p><h1>{ownHeading}</h1><p>Welcome, {user?.fullName || 'EcoConnect member'}.</p></div></div><div className="dashboard-role-pill">{roleLabels[role] || roleLabels.URBAN_WASTE_GENERATOR} · {user?.email}</div><div className="dashboard-grid"><div className="panel-card stat-panel"><span>Total listings</span><strong>{visibleListings.length}</strong></div><div className="panel-card stat-panel"><span>Awaiting pickup</span><strong>{count('AVAILABLE') + count('PENDING')}</strong></div><div className="panel-card stat-panel"><span>In progress</span><strong>{count('ACCEPTED') + count('SCHEDULED') + count('IN_PROGRESS')}</strong></div><div className="panel-card stat-panel"><span>Collected</span><strong>{completed}</strong></div></div>
+    {role === 'URBAN_WASTE_GENERATOR' && <div className="dashboard-action-banner"><div><h3>Create a waste listing</h3><p>Tell nearby cooperatives what organic waste is ready for collection.</p></div><div className="dashboard-action-buttons"><button className="primary-button" onClick={onCreate}>+ Create listing</button><button className="secondary-button" onClick={onPickupHistory}>Pickup History</button></div></div>}
     {isCoordinator && <div className="dashboard-action-banner"><div><h3>Steps 02–03 · Match, schedule and track</h3><p>Review available waste, accept a request, and mark collections as in progress or collected.</p></div><span className="workflow-mini-badge">Coordinator tools</span></div>}
     {isAdmin && <div className="dashboard-action-banner"><div><h3>Platform oversight</h3><p>Review all listings and oversee matching and collection status across the platform.</p></div><span className="workflow-mini-badge">Admin tools</span></div>}
     <div className="section-heading dashboard-list-heading"><div><p className="eyebrow">Live platform data</p><h2>{isCoordinator ? 'Requests to coordinate' : isAdmin ? 'All waste listings' : 'Your waste community'}</h2></div></div>
-    {busy ? <p className="form-intro">Loading waste listings…</p> : visibleListings.length === 0 ? <div className="empty-state panel-card"><span>♻️</span><h3>No waste listings yet</h3><p>{isCoordinator ? 'New listings from generators will appear here.' : 'Create the first listing to start the collection process.'}</p>{role === 'URBAN_WASTE_GENERATOR' && <button className="primary-button" onClick={onCreate}>Create a listing</button>}</div> : <div className="listing-grid">{visibleListings.map((item) => <article className="panel-card listing-card" key={item.id}><div className="listing-topline"><span className="listing-tag">{item.wasteType}</span><span className={`status-pill status-${String(item.status).toLowerCase()}`}>{String(item.status).replaceAll('_', ' ')}</span></div><h3>{item.quantityKg} kg</h3><p>{item.location}</p>{item.description && <p>{item.description}</p>}<div className="listing-meta"><span>Contact</span><strong>{item.contactName || 'EcoConnect user'}</strong></div>{(isCoordinator || isAdmin) && <div className="listing-status-actions">{String(item.status).toUpperCase() === 'AVAILABLE' && <button className="secondary-button" onClick={() => onChangeStatus(item.id, 'ACCEPTED')}>Accept pickup</button>}{['ACCEPTED', 'SCHEDULED'].includes(String(item.status).toUpperCase()) && <button className="secondary-button" onClick={() => onChangeStatus(item.id, 'IN_PROGRESS')}>Start pickup</button>}{String(item.status).toUpperCase() === 'IN_PROGRESS' && <button className="primary-button" onClick={() => onChangeStatus(item.id, 'COLLECTED')}>Mark collected</button>}</div>}</article>)}</div>}
-  </section>
+    {listingContent}
+  </section><Footer /></>
 }
 
-function CreateListing({ user, onCancel, onSubmit, saving, error }) {
-  return <section className="auth-page-centered"><div className="auth-card-centered listing-form-centered"><p className="eyebrow">Step 01 · Share organic waste</p><h2>Create a waste listing</h2><form className="auth-form" onSubmit={onSubmit}><label>Waste type<select name="wasteType" required defaultValue=""><option value="" disabled>Select waste type</option><option>Food scraps</option><option>Garden waste</option><option>Fruit peels</option><option>Leaf litter</option><option>Other organic waste</option></select></label><label>Quantity (kg)<input name="quantityKg" type="number" min="0.1" step="0.1" required placeholder="e.g. 25" /></label><label>Pickup location<input name="location" required defaultValue={user?.location || ''} placeholder="Area, city" /></label><label>Contact name<input name="contactName" required defaultValue={user?.fullName || ''} placeholder="Your full name" /></label><label>Contact phone<input name="contactPhone" type="tel" required minLength="8" maxLength="20" placeholder="Enter a contact number" /></label><label>Additional details<textarea name="description" rows="3" maxLength="1000" placeholder="Add handling or pickup notes" /></label>{error && <p className="form-message error-message" role="alert">{error}</p>}<div className="form-actions"><button type="button" className="secondary-button" onClick={onCancel}>Cancel</button><button type="submit" className="primary-button" disabled={saving}>{saving ? 'Submitting…' : 'Submit listing'}</button></div></form></div></section>
+function UrbanGeneratorWorkspace({
+  section,
+  user,
+  listings,
+  loadingListings,
+  listingsError,
+  cooperatives,
+  loadingCooperatives,
+  cooperativesError,
+  onCreate,
+  onChangeStatus,
+  onPickupHistory,
+  onEditListing,
+  onDeleteListing,
+  deletingListingId,
+  onNavigate,
+  onLogout,
+}) {
+  let page
+
+  if (section === 'cooperatives') {
+    page = <FindCooperativesPage cooperatives={cooperatives} loading={loadingCooperatives} error={cooperativesError} />
+  } else if (section === 'waste-guide') {
+    page = <WasteGuidePage />
+  } else if (section === 'impact-reports') {
+    page = <ImpactReportsPage listings={listings} loading={loadingListings} error={listingsError} />
+  } else if (section === 'pickup-history') {
+    page = <PickupHistoryPage listings={listings} loading={loadingListings} error={listingsError} onBack={() => onNavigate('dashboard')} />
+  } else if (section === 'profile') {
+    page = <UrbanProfilePage user={user} onLogout={onLogout} />
+  } else {
+    page = <RoleDashboard user={user} listings={listings} onCreate={onCreate} onChangeStatus={onChangeStatus} onPickupHistory={onPickupHistory} onEditListing={onEditListing} onDeleteListing={onDeleteListing} deletingListingId={deletingListingId} busy={loadingListings} error={listingsError} />
+  }
+
+  return <>{page}{section === 'dashboard' ? null : <Footer />}</>
+}
+
+function CreateListing({ user, listing, onCancel, onSubmit, saving, error }) {
+  const editing = Boolean(listing)
+  const supportedWasteTypes = ['Food scraps', 'Garden waste', 'Fruit peels', 'Leaf litter', 'Other organic waste']
+  return <section className="auth-page-centered"><div className="auth-card-centered listing-form-centered"><p className="eyebrow">{editing ? 'Update your listing' : 'Step 01 · Share organic waste'}</p><h2>{editing ? 'Edit waste listing' : 'Create a waste listing'}</h2><form className="auth-form" onSubmit={onSubmit}><label>Waste type<select name="wasteType" required defaultValue={listing?.wasteType || ''}><option value="" disabled>Select waste type</option>{listing?.wasteType && !supportedWasteTypes.includes(listing.wasteType) && <option>{listing.wasteType}</option>}{supportedWasteTypes.map((type) => <option key={type}>{type}</option>)}</select></label><label>Quantity (kg)<input name="quantityKg" type="number" min="0.1" step="0.1" required defaultValue={listing?.quantityKg ?? ''} placeholder="e.g. 25" /></label><label>Pickup location<input name="location" required defaultValue={listing?.location || user?.location || ''} placeholder="Area, city" /></label><label>Contact name<input name="contactName" required defaultValue={listing?.contactName || user?.fullName || ''} placeholder="Your full name" /></label><label>Contact phone<input name="contactPhone" type="tel" required minLength="8" maxLength="20" defaultValue={listing?.contactPhone || ''} placeholder="Enter a contact number" /></label><label>Additional details<textarea name="description" rows="3" maxLength="1000" defaultValue={listing?.description || ''} placeholder="Add handling or pickup notes" /></label>{error && <p className="form-message error-message" role="alert">{error}</p>}<div className="form-actions"><button type="button" className="secondary-button" onClick={onCancel}>Cancel</button><button type="submit" className="primary-button" disabled={saving}>{saving ? (editing ? 'Saving…' : 'Submitting…') : (editing ? 'Save Changes' : 'Submit listing')}</button></div></form></div></section>
 }
 
 export default function App() {
-  const [screen, setScreen] = useState('home')
+  const [user, setUser] = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem('ecoconnect-user') || 'null') } catch { return null }
+  })
+  const [screen, setScreen] = useState(() => user ? 'dashboard' : 'home')
   const [selectedRole, setSelectedRole] = useState('URBAN_WASTE_GENERATOR')
   const [loginEmail, setLoginEmail] = useState('')
   const [loginError, setLoginError] = useState('')
@@ -90,29 +222,72 @@ export default function App() {
   const [savingLogin, setSavingLogin] = useState(false)
   const [savingListing, setSavingListing] = useState(false)
   const [listingError, setListingError] = useState('')
+  const [listingToEdit, setListingToEdit] = useState(null)
+  const [deletingListingId, setDeletingListingId] = useState(null)
   const [listings, setListings] = useState([])
   const [loadingListings, setLoadingListings] = useState(false)
+  const [listingsError, setListingsError] = useState('')
+  const [cooperatives, setCooperatives] = useState([])
+  const [loadingCooperatives, setLoadingCooperatives] = useState(false)
+  const [cooperativesError, setCooperativesError] = useState('')
+  const listingsRequest = useRef(null)
   const [dashboardSection, setDashboardSection] =
   useState('dashboard');
-  const [user, setUser] = useState(() => {
-    try { return JSON.parse(sessionStorage.getItem('ecoconnect-user') || 'null') } catch { return null }
-  })
   const [notice, setNotice] = useState('')
 
-  const fetchListings = async () => {
+  const fetchListings = useCallback(async (role = user?.role) => {
+    listingsRequest.current?.abort()
+    const request = new AbortController()
+    listingsRequest.current = request
     setLoadingListings(true)
+    setListingsError('')
     try {
-      const response = await fetch('/api/waste-listings')
-      if (!response.ok) throw new Error('Could not load listings')
-      setListings(await response.json())
+      const endpoint = role === 'URBAN_WASTE_GENERATOR'
+        ? '/api/waste-listings/mine'
+        : '/api/waste-listings'
+      const response = await fetch(endpoint, { credentials: 'same-origin', signal: request.signal })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(data.message || 'Could not load listings.')
+      if (!Array.isArray(data)) throw new Error('The listings API returned an unexpected response.')
+      if (request.signal.aborted) return null
+      setListings(data)
+      return data
     } catch (error) {
+      if (request.signal.aborted) return null
       console.error(error)
-      setNotice('Could not connect to the listings API. Make sure the Spring Boot backend is running.')
-    } finally { setLoadingListings(false) }
-    
+      const message = error.message || 'Could not connect to the listings API. Make sure the Spring Boot backend is running.'
+      setListingsError(message)
+      return null
+    } finally {
+      if (listingsRequest.current === request) {
+        listingsRequest.current = null
+        setLoadingListings(false)
+      }
+    }
+  }, [user?.role])
+
+  const loadUrbanPageData = async (section) => {
+    if (section === 'cooperatives') {
+      setLoadingCooperatives(true)
+      setCooperativesError('')
+      try {
+        const response = await fetch('/api/cooperatives')
+        const data = await response.json().catch(() => ({}))
+        if (!response.ok) throw new Error(data.message || 'Could not load cooperatives.')
+        setCooperatives(data)
+      } catch (error) {
+        console.error('Failed to load cooperative directory:', error)
+        setCooperativesError(error.message || 'Unable to reach the cooperative directory.')
+      } finally {
+        setLoadingCooperatives(false)
+      }
+    }
+
   }
 
-  useEffect(() => { if (user) fetchListings() }, [user?.email])
+  useEffect(() => {
+    if (user && screen === 'dashboard') void fetchListings(user.role)
+  }, [dashboardSection, fetchListings, screen, user])
   useEffect(() => {
     const handleLoginShortcut = (event) => { setLoginEmail(event.detail?.email || ''); setLoginError(''); setScreen('login') }
     window.addEventListener('ecoconnect-open-login', handleLoginShortcut)
@@ -120,6 +295,14 @@ export default function App() {
   }, [])
 
   const navigate = (next) => { setScreen(next); setNotice(''); setLoginError(''); setRegistrationError(''); setListingError(''); window.scrollTo({ top: 0, behavior: 'smooth' }) }
+  const navigateUrbanSection = (section) => {
+    if (user?.role !== 'URBAN_WASTE_GENERATOR') return
+    void loadUrbanPageData(section)
+    setDashboardSection(section)
+    if (screen !== 'dashboard') navigate('dashboard')
+    else setNotice('')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
  const handleNavbarNavigate = (label, href) => {
   setNotice('');
   setLoginError('');
@@ -173,8 +356,9 @@ export default function App() {
   const allowedSections = {
     URBAN_WASTE_GENERATOR: [
       'dashboard',
-      'my-listings',
-      'requests',
+      'cooperatives',
+      'waste-guide',
+      'impact-reports',
       'profile',
     ],
     COOPERATIVE_COORDINATOR: [
@@ -198,6 +382,7 @@ export default function App() {
     return;
   }
 
+  if (user.role === 'URBAN_WASTE_GENERATOR') void loadUrbanPageData(section)
   setDashboardSection(section);
 
   // Keep the existing screen-based application structure.
@@ -215,7 +400,8 @@ export default function App() {
       const data = await response.json().catch(() => ({}))
       if (!response.ok) throw new Error(data.message || 'Could not sign in. Check your email and password.')
       const signedInUser = { id: data.id, fullName: data.fullName, email: data.email, role: data.role, organizationName: data.organizationName, location: data.location }
-      sessionStorage.setItem('ecoconnect-user', JSON.stringify(signedInUser)); setUser(signedInUser); setLoginEmail(data.email); navigate('dashboard'); await fetchListings()
+      listingsRequest.current?.abort(); listingsRequest.current = null
+      sessionStorage.setItem('ecoconnect-user', JSON.stringify(signedInUser)); setListings([]); setListingToEdit(null); setLoadingListings(false); setUser(signedInUser); setLoginEmail(data.email); setDashboardSection('dashboard'); navigate('dashboard')
     } catch (error) { setLoginError(error.message || 'Unable to reach the EcoConnect API.') }
     finally { setSavingLogin(false) }
   }
@@ -237,9 +423,67 @@ export default function App() {
     try {
       const response = await fetch('/api/waste-listings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
       const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.message || 'Could not submit this listing.')
-      setListings((current) => [data, ...current]); navigate('dashboard'); setNotice('Your waste listing has been created successfully.')
+      setListings((current) => [data, ...current.filter((listing) => listing.id !== data.id)])
+      const refreshedListings = await fetchListings(user?.role)
+      navigate('dashboard')
+      setNotice(refreshedListings
+        ? 'Your waste listing has been created successfully.'
+        : 'Your waste listing was saved, but the dashboard could not refresh. Reload the dashboard to retry.')
     } catch (error) { setListingError(error.message || 'Unable to reach the listings API.') }
     finally { setSavingListing(false) }
+  }
+  const openEditListing = (listing) => {
+    setListingToEdit(listing)
+    setListingError('')
+    navigate('edit-listing')
+  }
+  const handleUpdateListing = async (event) => {
+    event.preventDefault()
+    if (!listingToEdit) return
+    setSavingListing(true)
+    setListingError('')
+    const form = new FormData(event.currentTarget)
+    const payload = Object.fromEntries(form.entries())
+    payload.quantityKg = Number(payload.quantityKg)
+    try {
+      const response = await fetch(`/api/waste-listings/${listingToEdit.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(data.message || 'Could not update this listing.')
+      setListings((current) => current.map((item) => item.id === data.id ? data : item))
+      const refreshedListings = await fetchListings(user?.role)
+      setListingToEdit(null)
+      navigate('dashboard')
+      setNotice(refreshedListings
+        ? 'Your waste listing has been updated successfully.'
+        : 'Your listing was updated, but the dashboard could not refresh. Reload the dashboard to retry.')
+    } catch (error) {
+      setListingError(error.message || 'Unable to reach the listings API.')
+    } finally {
+      setSavingListing(false)
+    }
+  }
+  const handleDeleteListing = async (listing) => {
+    const confirmed = window.confirm('Are you sure you want to delete this waste listing? This action cannot be undone.')
+    if (!confirmed) return
+    setDeletingListingId(listing.id)
+    try {
+      const response = await fetch(`/api/waste-listings/${listing.id}`, { method: 'DELETE' })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(data.message || 'Could not delete this listing.')
+      setListings((current) => current.filter((item) => item.id !== listing.id))
+      const refreshedListings = await fetchListings(user?.role)
+      setNotice(refreshedListings
+        ? 'Your waste listing has been deleted.'
+        : 'Your listing was deleted, but the dashboard could not refresh. Reload the dashboard to retry.')
+    } catch (error) {
+      setNotice(error.message || 'Unable to reach the listings API.')
+    } finally {
+      setDeletingListingId(null)
+    }
   }
   const handleStatusChange = async (id, status) => {
     try {
@@ -248,7 +492,7 @@ export default function App() {
       setListings((current) => current.map((item) => item.id === id ? data : item)); setNotice(`Listing status updated to ${status.replaceAll('_', ' ').toLowerCase()}.`)
     } catch (error) { setNotice(error.message || 'Could not update listing status.') }
   }
-  const logout = async () => { try { await fetch('/api/users/logout', { method: 'POST' }) } catch (error) { console.error(error) } sessionStorage.removeItem('ecoconnect-user'); setUser(null); navigate('home'); setNotice('You have been logged out.') }
+  const logout = async () => { try { await fetch('/api/users/logout', { method: 'POST' }) } catch (error) { console.error(error) } listingsRequest.current?.abort(); listingsRequest.current = null; sessionStorage.removeItem('ecoconnect-user'); setListings([]); setListingToEdit(null); setLoadingListings(false); setListingsError(''); setUser(null); setDashboardSection('dashboard'); navigate('home'); setNotice('You have been logged out.') }
 
   let content
   if (screen === 'home') content = <HomePage onJoin={() => navigate('auth-choice')} onListWaste={() => user ? navigate('create-listing') : navigate('auth-choice')} />
@@ -257,12 +501,14 @@ export default function App() {
   else if (screen === 'register' && registrationSuccess) content = <section className="registration-success-wrap"><div className="registration-success-card" role="status"><div className="registration-success-icon">✓</div><p className="registration-success-eyebrow">ACCOUNT CREATED</p><h2>Registration Successful!</h2><p className="registration-success-message">Your EcoConnect account has been created successfully. You can now log in to continue.</p><p className="success-email-line">Registered email: <strong>{loginEmail}</strong></p><button className="go-to-login-button" onClick={() => navigate('login')}>Go to Login <span>→</span></button></div></section>
   else if (screen === 'register') content = <RegisterPage onSubmit={handleRegister} saving={savingRegistration} error={registrationError} selectedRole={selectedRole} onChangeRole={setSelectedRole} />
   else if (screen === 'login') content = <LoginPage onSubmit={handleLogin} error={loginError} busy={savingLogin} email={loginEmail} onEmailChange={setLoginEmail} onGoRegister={() => navigate('role-select')} />
+  else if (screen === 'dashboard' && user?.role === 'URBAN_WASTE_GENERATOR') content = <UrbanGeneratorWorkspace section={dashboardSection} user={user} listings={listings} loadingListings={loadingListings} listingsError={listingsError} cooperatives={cooperatives} loadingCooperatives={loadingCooperatives} cooperativesError={cooperativesError} onCreate={() => navigate('create-listing')} onChangeStatus={handleStatusChange} onPickupHistory={() => navigateUrbanSection('pickup-history')} onEditListing={openEditListing} onDeleteListing={handleDeleteListing} deletingListingId={deletingListingId} onNavigate={navigateUrbanSection} onLogout={logout} />
   else if (screen === 'dashboard' && user) content = <RoleDashboard user={user} listings={listings} onCreate={() => navigate('create-listing')} onChangeStatus={handleStatusChange} busy={loadingListings} />
-  else if (screen === 'create-listing' && user?.role === 'URBAN_WASTE_GENERATOR') content = <CreateListing user={user} onCancel={() => navigate('dashboard')} onSubmit={handleCreateListing} saving={savingListing} error={listingError} />
-  else if (screen === 'dashboard' || screen === 'create-listing') content = <HomePage onJoin={() => navigate('auth-choice')} onListWaste={() => navigate('auth-choice')} />
+  else if (screen === 'create-listing' && user?.role === 'URBAN_WASTE_GENERATOR') content = <><CreateListing user={user} onCancel={() => navigate('dashboard')} onSubmit={handleCreateListing} saving={savingListing} error={listingError} /><Footer /></>
+  else if (screen === 'edit-listing' && user?.role === 'URBAN_WASTE_GENERATOR' && listingToEdit) content = <><CreateListing key={listingToEdit.id} user={user} listing={listingToEdit} onCancel={() => { setListingToEdit(null); navigate('dashboard') }} onSubmit={handleUpdateListing} saving={savingListing} error={listingError} /><Footer /></>
+  else if (screen === 'dashboard' || screen === 'create-listing' || screen === 'edit-listing') content = <HomePage onJoin={() => navigate('auth-choice')} onListWaste={() => navigate('auth-choice')} />
   else content = <HomePage onJoin={() => navigate('auth-choice')} onListWaste={() => navigate('auth-choice')} />
 
-  const showDashboardNavbar = Boolean(user) && (screen === 'dashboard' || screen === 'create-listing')
+  const showDashboardNavbar = Boolean(user) && (screen === 'dashboard' || screen === 'create-listing' || screen === 'edit-listing')
   const showPublicNavbar = !user && screen === 'home'
 
   return (

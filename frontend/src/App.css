@@ -662,6 +662,46 @@
   gap: 18px;
 }
 
+.listing-owner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.listing-owner-actions .secondary-button,
+.listing-delete-button {
+  min-height: 42px;
+  padding: 10px 16px;
+}
+
+.listing-delete-button {
+  border: 1px solid #e8caca;
+  border-radius: 10px;
+  background: #fff8f8;
+  color: #a33c3c;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.listing-delete-button:hover:not(:disabled) {
+  border-color: #d7a9a9;
+  background: #fff0f0;
+}
+
+.listing-delete-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.listing-edit-restriction {
+  margin: 0;
+  color: #69766d;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
 .listing-topline {
   display: flex;
   justify-content: space-between;
@@ -923,10 +963,14 @@
 .dashboard-role-pill, .workflow-mini-badge { display: inline-flex; align-items: center; border-radius: 999px; background: #e7f6ed; color: #16744f; padding: 9px 14px; font-size: 13px; font-weight: 700; margin: 0 0 24px; overflow-wrap: anywhere; }
 .role-dashboard-shell { max-width: 1280px; margin: 0 auto; }
 .dashboard-action-banner { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 24px; border-radius: 18px; border: 1px solid #dce9e1; background: #f4faf6; margin: 26px 0; }
+.dashboard-action-buttons { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 12px; }
+.dashboard-action-buttons .primary-button, .dashboard-action-buttons .secondary-button { min-height: 48px; }
 .dashboard-action-banner h3 { margin: 0 0 8px; color: #173b2d; }
 .dashboard-action-banner p { margin: 0; color: #61746a; line-height: 1.55; }
 .dashboard-list-heading { margin: 34px 0 20px; }
 .dashboard-list-heading h2 { margin: 0; }
+.dashboard-listing-group { margin-top: 22px; }
+.dashboard-listing-group > h3 { margin: 0 0 14px; color: #345047; font-size: 1rem; }
 .empty-state { padding: 40px 24px; text-align: center; }
 .empty-state > span { font-size: 36px; }
 .empty-state h3 { margin-bottom: 8px; }
@@ -939,7 +983,8 @@
 .listing-form-centered textarea { resize: vertical; }
 .site-footer { padding: 28px 20px; text-align: center; color: #74837a; font-size: 13px; }
 .topbar-user { display: flex; align-items: center; gap: 12px; color: #345347; font-size: 14px; }
-@media (max-width: 720px) { .auth-page-centered { padding: 28px 14px; } .auth-card-centered { border-radius: 18px; padding: 24px 18px; } .dashboard-welcome, .dashboard-action-banner { align-items: flex-start; flex-direction: column; } .topbar-user { gap: 6px; flex-direction: column; align-items: flex-end; } }
+@media (max-width: 720px) { .auth-page-centered { padding: 28px 14px; } .auth-card-centered { border-radius: 18px; padding: 24px 18px; } .dashboard-welcome, .dashboard-action-banner { align-items: flex-start; flex-direction: column; } .dashboard-action-buttons { width: 100%; justify-content: flex-start; } .topbar-user { gap: 6px; flex-direction: column; align-items: flex-end; } }
+@media (max-width: 480px) { .dashboard-action-buttons { flex-direction: column; } .dashboard-action-buttons > button { width: 100%; } }
 
 
 /* Rounded, compact styling for the reusable Navbar component */

@@ -3,19 +3,19 @@ import { useState } from 'react';
 import './Navbar.css';
 
 const navigationByRole = {
-  urban: [
+  URBAN_WASTE_GENERATOR: [
     { label: 'Dashboard', href: '#dashboard' },
-    { label: 'My Listings', href: '#my-listings' },
-    { label: 'Requests', href: '#requests' },
-    { label: 'Profile', href: '#profile' },
+    { label: 'Find Cooperatives', href: '#cooperatives' },
+    { label: 'Waste Guide', href: '#waste-guide' },
+    { label: 'Impact & Reports', href: '#impact-reports' },
   ],
-  cooperative: [
+  COOPERATIVE_COORDINATOR: [
     { label: 'Dashboard', href: '#dashboard' },
     { label: 'Available Requests', href: '#available-requests' },
     { label: 'Accepted Pickups', href: '#accepted-pickups' },
     { label: 'Profile', href: '#profile' },
   ],
-  admin: [
+  ADMIN: [
     { label: 'Dashboard', href: '#dashboard' },
     { label: 'Users', href: '#users' },
     { label: 'Listings', href: '#listings' },
@@ -23,29 +23,25 @@ const navigationByRole = {
   ],
 };
 
-function normalizeRole(role = '') {
-  const value = role.toLowerCase();
-
-  if (value.includes('admin')) return 'admin';
-  if (value.includes('cooperative') || value.includes('coordinator')) {
-    return 'cooperative';
-  }
-
-  return 'urban';
-}
+const roleLabels = {
+  URBAN_WASTE_GENERATOR: 'Urban Waste Generator',
+  COOPERATIVE_COORDINATOR: 'Cooperative Coordinator',
+  ADMIN: 'Administrator',
+};
 
 export default function Navbar({
   role = 'public',
   user = null,
   onLogout,
   onNavigate,
+  activeSection = 'dashboard',
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);
 
-  const normalizedRole = normalizeRole(role);
-  const isPublic = !user || role.toLowerCase() === 'public';
+  const normalizedRole = String(role).toUpperCase();
+  const isPublic = !user || normalizedRole === 'PUBLIC';
 
   const links = isPublic
     ? [
@@ -53,16 +49,10 @@ export default function Navbar({
         { label: 'About', href: '#about' },
         { label: 'How It Works', href: '#how-it-works' },
       ]
-    : navigationByRole[normalizedRole];
+    : navigationByRole[normalizedRole] || [];
 
   const userName =
-    user?.name || user?.fullName || user?.username || user?.email || 'User';
-
-  const userRoleLabel = {
-    urban: 'Urban Waste Generator',
-    cooperative: 'Cooperative Coordinator',
-    admin: 'Administrator',
-  }[normalizedRole];
+    user?.fullName || user?.name || user?.email || 'User';
 
   const navigate = (href, label) => {
     setMenuOpen(false);
@@ -85,7 +75,7 @@ export default function Navbar({
           onClick={(event) => {
             if (onNavigate) {
               event.preventDefault();
-              navigate('#home', 'Home');
+              navigate('#dashboard', 'Dashboard');
             }
           }}
         >
@@ -96,36 +86,60 @@ export default function Navbar({
           </span>
         </a>
 
-        <nav className={`eco-nav-links ${menuOpen ? 'is-open' : ''}`}>
-          {links.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              onClick={(event) => {
-                event.preventDefault();
-                navigate(link.href, link.label);
-              }}
-            >
-              {link.label}
-            </a>
-          ))}
+        <nav
+          className={`eco-nav-links ${menuOpen ? 'is-open' : ''}`}
+          aria-label="Main navigation"
+        >
+          {links.map((link) => {
+            const section = link.href.replace('#', '');
+
+            return (
+              <a
+                key={link.label}
+                href={link.href}
+                className={
+                  !isPublic && activeSection === section
+                    ? 'active'
+                    : ''
+                }
+                aria-current={
+                  !isPublic && activeSection === section
+                    ? 'page'
+                    : undefined
+                }
+                onClick={(event) => {
+                  event.preventDefault();
+                  navigate(link.href, link.label);
+                }}
+              >
+                {link.label}
+              </a>
+            );
+          })}
 
           {isPublic && (
             <div className="eco-nav-action-wrap">
               <button
+                type="button"
                 className="eco-join-button"
                 onClick={() => setJoinOpen((open) => !open)}
                 aria-expanded={joinOpen}
               >
-                Join Now 
+                Join Now
               </button>
 
               {joinOpen && (
                 <div className="eco-dropdown eco-join-dropdown">
-                  <button onClick={() => navigate('/login', 'Login')}>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/login', 'Login')}
+                  >
                     Login
                   </button>
-                  <button onClick={() => navigate('/register', 'Register')}>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/register', 'Register')}
+                  >
                     Register
                   </button>
                 </div>
@@ -137,6 +151,7 @@ export default function Navbar({
         {!isPublic && (
           <div className="eco-profile-wrap">
             <button
+              type="button"
               className="eco-profile-button"
               onClick={() => setProfileOpen((open) => !open)}
               aria-expanded={profileOpen}
@@ -153,18 +168,26 @@ export default function Navbar({
               <div className="eco-dropdown eco-profile-dropdown">
                 <div className="eco-profile-summary">
                   <strong>{userName}</strong>
-                  <span>{userRoleLabel}</span>
+                  <span>{roleLabels[normalizedRole] || 'User'}</span>
+                  <span>{user?.email}</span>
                 </div>
 
-                <button onClick={() => navigate('#profile', 'Profile')}>
-                  My Profile
-                </button>
+                {normalizedRole !== 'ADMIN' && (
+                  <button
+                    type="button"
+                    onClick={() => navigate('#profile', 'Profile')}
+                  >
+                    My Profile
+                  </button>
+                )}
 
                 {onLogout && (
                   <button
+                    type="button"
                     className="eco-logout-button"
                     onClick={() => {
                       setProfileOpen(false);
+                      setMenuOpen(false);
                       onLogout();
                     }}
                   >
@@ -177,9 +200,12 @@ export default function Navbar({
         )}
 
         <button
+          type="button"
           className="eco-menu-toggle"
           onClick={() => setMenuOpen((open) => !open)}
-          aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+          aria-label={
+            menuOpen ? 'Close navigation menu' : 'Open navigation menu'
+          }
           aria-expanded={menuOpen}
         >
           {menuOpen ? '✕' : '☰'}

@@ -1,0 +1,368 @@
+.urban-page-shell {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding-bottom: 12px;
+}
+
+.urban-page-heading {
+  margin: 0 0 28px;
+}
+
+.urban-page-heading h1 {
+  margin: 0 0 10px;
+  color: #13362a;
+  font-size: clamp(30px, 4vw, 44px);
+  line-height: 1.15;
+}
+
+.urban-page-heading > p:last-child {
+  margin: 0;
+  color: #63746b;
+  line-height: 1.6;
+}
+
+.urban-filter-panel {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 20px;
+}
+
+.urban-filter-panel label {
+  display: grid;
+  gap: 7px;
+  color: #345047;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.urban-filter-panel input,
+.urban-filter-panel select {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid #d6e1da;
+  border-radius: 11px;
+  background: #fbfdfb;
+  color: #17372b;
+  font: inherit;
+}
+
+.cooperative-grid,
+.guide-grid,
+.faq-grid,
+.impact-metric-grid {
+  display: grid;
+  gap: 20px;
+}
+
+.cooperative-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cooperative-card {
+  padding: 24px;
+}
+
+.cooperative-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.cooperative-card-heading .role-icon {
+  flex: 0 0 54px;
+  margin: 0;
+}
+
+.cooperative-card-heading h2 {
+  margin: 0 0 5px;
+  color: #123b2f;
+  font-size: 1.25rem;
+}
+
+.cooperative-card-heading p {
+  margin: 0;
+  color: #61746a;
+}
+
+.cooperative-details,
+.pickup-history-details {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.cooperative-details > div,
+.pickup-history-details > div {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.8fr) minmax(0, 1.2fr);
+  gap: 14px;
+  padding: 13px 0;
+  border-top: 1px solid #e6eee8;
+}
+
+.cooperative-details dt,
+.pickup-history-details dt {
+  color: #63746b;
+}
+
+.cooperative-details dd,
+.pickup-history-details dd {
+  margin: 0;
+  color: #244c38;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.guide-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.guide-card {
+  padding: 24px;
+}
+
+.guide-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 15px;
+  border-radius: 14px;
+  background: #e6f6ec;
+  font-size: 25px;
+}
+
+.guide-card h2 {
+  margin: 0 0 14px;
+  color: #173b2d;
+  font-size: 1.2rem;
+}
+
+.guide-card ul {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 20px;
+  color: #536b65;
+}
+
+.faq-section {
+  padding-top: 46px;
+}
+
+.faq-section .section-heading h2 {
+  margin: 0;
+  color: #13362a;
+}
+
+.faq-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.faq-card {
+  padding: 22px;
+}
+
+.faq-card h3 {
+  margin: 0 0 10px;
+  color: #173b2d;
+  font-size: 1.05rem;
+}
+
+.faq-card p {
+  margin: 0;
+  color: #61746a;
+  line-height: 1.6;
+}
+
+.impact-metric-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 24px;
+}
+
+.impact-metric-card {
+  padding: 24px;
+}
+
+.impact-metric-card .guide-icon {
+  margin-bottom: 12px;
+}
+
+.impact-metric-card p {
+  margin: 0 0 7px;
+  color: #61746a;
+}
+
+.impact-metric-card strong {
+  color: #123b2f;
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+}
+
+.impact-breakdown {
+  padding: 24px;
+}
+
+.impact-breakdown .section-heading {
+  margin-bottom: 18px;
+}
+
+.impact-breakdown .section-heading h2 {
+  margin: 0;
+  color: #13362a;
+  font-size: 1.35rem;
+}
+
+.urban-empty-inline {
+  padding: 20px;
+  border-radius: 14px;
+  background: #f5faf6;
+  color: #244c38;
+}
+
+.urban-empty-inline p {
+  margin: 6px 0 0;
+  color: #61746a;
+}
+
+.impact-bars {
+  display: grid;
+  gap: 18px;
+}
+
+.impact-bar-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 8px;
+  color: #345047;
+}
+
+.impact-bar-track {
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e7f1e9;
+}
+
+.impact-bar-track span {
+  display: block;
+  height: 100%;
+  min-width: 8px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #78bd83, #16845b);
+}
+
+.pickup-history-list {
+  display: grid;
+  gap: 16px;
+}
+
+.pickup-history-card {
+  padding: 22px 24px;
+}
+
+.pickup-history-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.pickup-history-title h2 {
+  margin: 10px 0 0;
+  color: #123b2f;
+  font-size: 1.5rem;
+}
+
+.pickup-history-details {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.pickup-history-details > div {
+  grid-template-columns: 1fr;
+  gap: 5px;
+}
+
+.urban-back-button {
+  margin-top: 24px;
+}
+
+.urban-profile-card {
+  max-width: 680px;
+  padding: 28px;
+}
+
+.urban-profile-avatar {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 20px;
+  border-radius: 50%;
+  background: #dcebdd;
+  color: #28643d;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.urban-profile-card .cooperative-details > div {
+  grid-template-columns: minmax(120px, 0.5fr) minmax(0, 1fr);
+}
+
+.urban-logout-button {
+  margin-top: 22px;
+}
+
+.urban-page-message {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #f0f8f3;
+  color: #345047;
+}
+
+.urban-page-error {
+  background: #fff0f0;
+  color: #9b1c1c;
+}
+
+.pickup-history-page .urban-page-error {
+  background: #f0f8f3;
+  color: #345047;
+}
+
+@media (max-width: 760px) {
+  .urban-filter-panel,
+  .cooperative-grid,
+  .guide-grid,
+  .faq-grid,
+  .impact-metric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pickup-history-details {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .pickup-history-title {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .cooperative-details > div,
+  .urban-profile-card .cooperative-details > div {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+
+  .impact-bar-label {
+    font-size: 14px;
+  }
+}
