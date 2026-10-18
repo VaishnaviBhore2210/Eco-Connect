@@ -935,8 +935,6 @@
 .status-available, .status-pending { background: #fff4d9; color: #8b5a00; }
 .status-accepted, .status-scheduled, .status-in_progress { background: #e3efff; color: #245a9c; }
 .status-collected, .status-completed { background: #e2f7e9; color: #176b40; }
-.impact-step-note { display: flex; flex-direction: column; gap: 7px; margin-top: 30px; padding: 18px 20px; background: #f5faf6; border-left: 4px solid #16845b; border-radius: 10px; color: #244c38; }
-.impact-step-note span { color: #61746a; font-size: 14px; line-height: 1.5; }
 .listing-form-centered { max-width: 620px; }
 .listing-form-centered textarea { resize: vertical; }
 .site-footer { padding: 28px 20px; text-align: center; color: #74837a; font-size: 13px; }

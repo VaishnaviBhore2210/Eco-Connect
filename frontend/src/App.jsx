@@ -58,7 +58,7 @@ function RoleChooser({ onChoose, onBack }) {
   return <section className="auth-page-centered"><div className="auth-card-centered role-chooser-card"><p className="eyebrow">Create your account</p><h2>Choose your role</h2><p className="form-intro">Choose how you will use EcoConnect. Administrator access is managed separately.</p><div className="role-choice-list">{options.map((item) => <button type="button" key={item.value} className="role-choice" onClick={() => onChoose(item.value)}><span className="role-choice-icon">{item.icon}</span><span className="role-choice-copy"><strong>{item.title}</strong><small>{item.description}</small></span><span className="role-choice-arrow">→</span></button>)}</div><button type="button" className="text-button" onClick={onBack}>← Back</button></div></section>
 }
 
-function RoleDashboard({ user, listings, onCreate, onChangeStatus, onLogout, busy }) {
+function RoleDashboard({ user, listings, onCreate, onChangeStatus, busy }) {
   const role = user?.role || 'URBAN_WASTE_GENERATOR'
   const isAdmin = role === 'ADMIN'
   const isCoordinator = role === 'COOPERATIVE_COORDINATOR'
@@ -66,13 +66,12 @@ function RoleDashboard({ user, listings, onCreate, onChangeStatus, onLogout, bus
   const visibleListings = role === 'URBAN_WASTE_GENERATOR' ? listings.filter((item) => item.createdByEmail && item.createdByEmail.toLowerCase() === String(user?.email || '').toLowerCase()) : listings
   const count = (status) => visibleListings.filter((item) => String(item.status || '').toUpperCase() === status).length
   const completed = count('COLLECTED') + count('COMPLETED')
-  return <section className="screen-shell role-dashboard-shell"><div className="dashboard-welcome"><div><p className="eyebrow">Your EcoConnect workspace</p><h1>{ownHeading}</h1><p>Welcome, {user?.fullName || 'EcoConnect member'}.</p></div><button className="secondary-button" onClick={onLogout}>Log out</button></div><div className="dashboard-role-pill">{roleLabels[role] || roleLabels.URBAN_WASTE_GENERATOR} · {user?.email}</div><div className="dashboard-grid"><div className="panel-card stat-panel"><span>Total listings</span><strong>{visibleListings.length}</strong></div><div className="panel-card stat-panel"><span>Awaiting pickup</span><strong>{count('AVAILABLE') + count('PENDING')}</strong></div><div className="panel-card stat-panel"><span>In progress</span><strong>{count('ACCEPTED') + count('SCHEDULED') + count('IN_PROGRESS')}</strong></div><div className="panel-card stat-panel"><span>Collected</span><strong>{completed}</strong></div></div>
-    {role === 'URBAN_WASTE_GENERATOR' && <div className="dashboard-action-banner"><div><h3>Step 01 · Create a waste listing</h3><p>Tell nearby cooperatives what organic waste is ready for collection.</p></div><button className="primary-button" onClick={onCreate}>+ Create listing</button></div>}
+  return <section className="screen-shell role-dashboard-shell"><div className="dashboard-welcome"><div><p className="eyebrow">Your EcoConnect workspace</p><h1>{ownHeading}</h1><p>Welcome, {user?.fullName || 'EcoConnect member'}.</p></div></div><div className="dashboard-role-pill">{roleLabels[role] || roleLabels.URBAN_WASTE_GENERATOR} · {user?.email}</div><div className="dashboard-grid"><div className="panel-card stat-panel"><span>Total listings</span><strong>{visibleListings.length}</strong></div><div className="panel-card stat-panel"><span>Awaiting pickup</span><strong>{count('AVAILABLE') + count('PENDING')}</strong></div><div className="panel-card stat-panel"><span>In progress</span><strong>{count('ACCEPTED') + count('SCHEDULED') + count('IN_PROGRESS')}</strong></div><div className="panel-card stat-panel"><span>Collected</span><strong>{completed}</strong></div></div>
+    {role === 'URBAN_WASTE_GENERATOR' && <div className="dashboard-action-banner"><div><h3>Create a waste listing</h3><p>Tell nearby cooperatives what organic waste is ready for collection.</p></div><button className="primary-button" onClick={onCreate}>+ Create listing</button></div>}
     {isCoordinator && <div className="dashboard-action-banner"><div><h3>Steps 02–03 · Match, schedule and track</h3><p>Review available waste, accept a request, and mark collections as in progress or collected.</p></div><span className="workflow-mini-badge">Coordinator tools</span></div>}
     {isAdmin && <div className="dashboard-action-banner"><div><h3>Platform oversight</h3><p>Review all listings and oversee matching and collection status across the platform.</p></div><span className="workflow-mini-badge">Admin tools</span></div>}
     <div className="section-heading dashboard-list-heading"><div><p className="eyebrow">Live platform data</p><h2>{isCoordinator ? 'Requests to coordinate' : isAdmin ? 'All waste listings' : 'Your waste community'}</h2></div></div>
     {busy ? <p className="form-intro">Loading waste listings…</p> : visibleListings.length === 0 ? <div className="empty-state panel-card"><span>♻️</span><h3>No waste listings yet</h3><p>{isCoordinator ? 'New listings from generators will appear here.' : 'Create the first listing to start the collection process.'}</p>{role === 'URBAN_WASTE_GENERATOR' && <button className="primary-button" onClick={onCreate}>Create a listing</button>}</div> : <div className="listing-grid">{visibleListings.map((item) => <article className="panel-card listing-card" key={item.id}><div className="listing-topline"><span className="listing-tag">{item.wasteType}</span><span className={`status-pill status-${String(item.status).toLowerCase()}`}>{String(item.status).replaceAll('_', ' ')}</span></div><h3>{item.quantityKg} kg</h3><p>{item.location}</p>{item.description && <p>{item.description}</p>}<div className="listing-meta"><span>Contact</span><strong>{item.contactName || 'EcoConnect user'}</strong></div>{(isCoordinator || isAdmin) && <div className="listing-status-actions">{String(item.status).toUpperCase() === 'AVAILABLE' && <button className="secondary-button" onClick={() => onChangeStatus(item.id, 'ACCEPTED')}>Accept pickup</button>}{['ACCEPTED', 'SCHEDULED'].includes(String(item.status).toUpperCase()) && <button className="secondary-button" onClick={() => onChangeStatus(item.id, 'IN_PROGRESS')}>Start pickup</button>}{String(item.status).toUpperCase() === 'IN_PROGRESS' && <button className="primary-button" onClick={() => onChangeStatus(item.id, 'COLLECTED')}>Mark collected</button>}</div>}</article>)}</div>}
-    <div className="impact-step-note"><strong>Step 04 · Measure impact</strong><span>Collected waste is counted in the dashboard totals. Keep statuses up to date to reflect progress.</span></div>
   </section>
 }
 
@@ -93,6 +92,8 @@ export default function App() {
   const [listingError, setListingError] = useState('')
   const [listings, setListings] = useState([])
   const [loadingListings, setLoadingListings] = useState(false)
+  const [dashboardSection, setDashboardSection] =
+  useState('dashboard');
   const [user, setUser] = useState(() => {
     try { return JSON.parse(sessionStorage.getItem('ecoconnect-user') || 'null') } catch { return null }
   })
@@ -108,6 +109,7 @@ export default function App() {
       console.error(error)
       setNotice('Could not connect to the listings API. Make sure the Spring Boot backend is running.')
     } finally { setLoadingListings(false) }
+    
   }
 
   useEffect(() => { if (user) fetchListings() }, [user?.email])
@@ -118,19 +120,93 @@ export default function App() {
   }, [])
 
   const navigate = (next) => { setScreen(next); setNotice(''); setLoginError(''); setRegistrationError(''); setListingError(''); window.scrollTo({ top: 0, behavior: 'smooth' }) }
-  const handleNavbarNavigate = (label, href) => {
-    if (label === 'Login') { setLoginEmail(''); navigate('login'); return }
-    if (label === 'Register') { setRegistrationSuccess(false); navigate('role-select'); return }
-    if (label === 'Home') { navigate(user ? 'dashboard' : 'home'); return }
-    if (label === 'Dashboard') { navigate('dashboard'); return }
-    if (label === 'My Listings' || label === 'Requests' || label === 'Available Requests' || label === 'Accepted Pickups' || label === 'Users' || label === 'Listings' || label === 'Reports' || label === 'Profile') {
-      if (screen !== 'dashboard') navigate('dashboard');
-      setNotice(`${label} navigation is ready to be connected to its dedicated view.`);
-      return;
+ const handleNavbarNavigate = (label, href) => {
+  setNotice('');
+  setLoginError('');
+  setRegistrationError('');
+  setListingError('');
+
+  // Public homepage navigation
+  if (label === 'Home') {
+    if (user) {
+      navigate('dashboard');
+      setDashboardSection('dashboard');
+    } else {
+      navigate('home');
     }
-    if (href?.startsWith('#') && screen === 'home') { window.location.hash = href; return }
-    if (label === 'About' || label === 'How It Works') { navigate('home'); window.location.hash = label === 'About' ? '#about' : '#how-it-works'; }
+    return;
   }
+
+  if (label === 'About' || label === 'How It Works') {
+    navigate('home');
+
+    window.setTimeout(() => {
+      document
+        .getElementById(
+          label === 'About' ? 'about' : 'how-it-works'
+        )
+        ?.scrollIntoView({ behavior: 'smooth' });
+    }, 0);
+
+    return;
+  }
+
+  // Authentication navigation
+  if (label === 'Login') {
+    setLoginEmail('');
+    navigate('login');
+    return;
+  }
+
+  if (label === 'Register') {
+    setRegistrationSuccess(false);
+    navigate('role-select');
+    return;
+  }
+
+  // Dashboard navigation requires a signed-in user
+  if (!user) {
+    navigate('login');
+    return;
+  }
+
+  const allowedSections = {
+    URBAN_WASTE_GENERATOR: [
+      'dashboard',
+      'my-listings',
+      'requests',
+      'profile',
+    ],
+    COOPERATIVE_COORDINATOR: [
+      'dashboard',
+      'available-requests',
+      'accepted-pickups',
+      'profile',
+    ],
+    ADMIN: [
+      'dashboard',
+      'users',
+      'listings',
+      'reports',
+    ],
+  };
+
+  const section = href?.replace('#', '') || 'dashboard';
+
+  if (!allowedSections[user.role]?.includes(section)) {
+    setNotice('This navigation option is not available for your account.');
+    return;
+  }
+
+  setDashboardSection(section);
+
+  // Keep the existing screen-based application structure.
+  if (screen !== 'dashboard') {
+    navigate('dashboard');
+  }
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
   const handleLogin = async (event) => {
     event.preventDefault(); setSavingLogin(true); setLoginError('')
     const form = new FormData(event.currentTarget)
@@ -181,7 +257,7 @@ export default function App() {
   else if (screen === 'register' && registrationSuccess) content = <section className="registration-success-wrap"><div className="registration-success-card" role="status"><div className="registration-success-icon">✓</div><p className="registration-success-eyebrow">ACCOUNT CREATED</p><h2>Registration Successful!</h2><p className="registration-success-message">Your EcoConnect account has been created successfully. You can now log in to continue.</p><p className="success-email-line">Registered email: <strong>{loginEmail}</strong></p><button className="go-to-login-button" onClick={() => navigate('login')}>Go to Login <span>→</span></button></div></section>
   else if (screen === 'register') content = <RegisterPage onSubmit={handleRegister} saving={savingRegistration} error={registrationError} selectedRole={selectedRole} onChangeRole={setSelectedRole} />
   else if (screen === 'login') content = <LoginPage onSubmit={handleLogin} error={loginError} busy={savingLogin} email={loginEmail} onEmailChange={setLoginEmail} onGoRegister={() => navigate('role-select')} />
-  else if (screen === 'dashboard' && user) content = <RoleDashboard user={user} listings={listings} onCreate={() => navigate('create-listing')} onChangeStatus={handleStatusChange} onLogout={logout} busy={loadingListings} />
+  else if (screen === 'dashboard' && user) content = <RoleDashboard user={user} listings={listings} onCreate={() => navigate('create-listing')} onChangeStatus={handleStatusChange} busy={loadingListings} />
   else if (screen === 'create-listing' && user?.role === 'URBAN_WASTE_GENERATOR') content = <CreateListing user={user} onCancel={() => navigate('dashboard')} onSubmit={handleCreateListing} saving={savingListing} error={listingError} />
   else if (screen === 'dashboard' || screen === 'create-listing') content = <HomePage onJoin={() => navigate('auth-choice')} onListWaste={() => navigate('auth-choice')} />
   else content = <HomePage onJoin={() => navigate('auth-choice')} onListWaste={() => navigate('auth-choice')} />
@@ -195,7 +271,13 @@ export default function App() {
         <Navbar role="public" onNavigate={handleNavbarNavigate} />
       )}
       {showDashboardNavbar && (
-        <Navbar role={user.role} user={user} onLogout={logout} onNavigate={handleNavbarNavigate} />
+        <Navbar
+  role={user.role}
+  user={user}
+  onLogout={logout}
+  onNavigate={handleNavbarNavigate}
+  activeSection={dashboardSection}
+/>
       )}
       <main>
         {notice && <p className="app-notice" role="status">{notice}</p>}
