@@ -1,10 +1,13 @@
 
 package com.ecoconnect.controller;
 
+import com.ecoconnect.dto.WasteListingUpdateRequest;
 import com.ecoconnect.entity.WasteListing;
 import com.ecoconnect.service.WasteListingService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -26,6 +29,22 @@ public class WasteListingController {
         listing.setCreatedByEmail((String) session.getAttribute("ecoconnectEmail"));
         listing.setStatus("AVAILABLE");
         return service.createListing(listing);
+    }
+
+    @PutMapping("/{id}")
+    public WasteListing updateGeneratorListing(@PathVariable Long id,
+            @Valid @RequestBody WasteListingUpdateRequest request,
+            jakarta.servlet.http.HttpSession session) {
+        requireRole(session, "URBAN_WASTE_GENERATOR");
+        return service.updateGeneratorListing(id, requireGeneratorEmail(session), request);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteGeneratorListing(@PathVariable Long id,
+            jakarta.servlet.http.HttpSession session) {
+        requireRole(session, "URBAN_WASTE_GENERATOR");
+        service.deleteGeneratorListing(id, requireGeneratorEmail(session));
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/status")
@@ -57,5 +76,21 @@ public class WasteListingController {
     public List<WasteListing> getAllListings(jakarta.servlet.http.HttpSession session) {
         requireAnyRole(session, "URBAN_WASTE_GENERATOR", "COOPERATIVE_COORDINATOR", "ADMIN");
         return service.getAllListings();
+    }
+
+    @GetMapping("/mine")
+    public List<WasteListing> getMyListings(jakarta.servlet.http.HttpSession session) {
+        requireRole(session, "URBAN_WASTE_GENERATOR");
+        return service.getListingsForGenerator(requireGeneratorEmail(session));
+    }
+
+    private String requireGeneratorEmail(jakarta.servlet.http.HttpSession session) {
+        String email = (String) session.getAttribute("ecoconnectEmail");
+        if (email == null || email.isBlank()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.UNAUTHORIZED,
+                    "Please sign in to manage your waste listings.");
+        }
+        return email;
     }
 }
