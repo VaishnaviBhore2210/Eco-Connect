@@ -1,0 +1,267 @@
+.cooperative-workspace {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.cooperative-page-heading {
+  margin: 4px 0 24px;
+}
+
+.cooperative-page-heading h1 {
+  margin: 4px 0 8px;
+  color: #13362a;
+  font-size: clamp(30px, 4vw, 42px);
+}
+
+.cooperative-page-heading > p:last-child {
+  margin: 0;
+  color: #63746b;
+}
+
+.cooperative-filter-panel {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  padding: 18px;
+  margin-bottom: 20px;
+}
+
+.cooperative-filter-panel label,
+.cooperative-record-actions label,
+.cooperative-date-to {
+  display: grid;
+  gap: 7px;
+  color: #345047;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.cooperative-filter-panel input,
+.cooperative-filter-panel select,
+.cooperative-record-actions input,
+.cooperative-date-to input {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid #d6e1da;
+  border-radius: 10px;
+  background: #fff;
+  color: #17372b;
+  font: inherit;
+}
+
+.cooperative-record-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.cooperative-record-card {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  padding: 21px;
+}
+
+.cooperative-record-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cooperative-record-title .eyebrow {
+  margin-bottom: 5px;
+}
+
+.cooperative-record-title h2 {
+  margin: 0;
+  color: #173b2d;
+  font-size: 1.18rem;
+}
+
+.cooperative-status {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #e8f1ea;
+  color: #315740;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.cooperative-status-accepted,
+.cooperative-status-scheduled,
+.cooperative-status-in_progress {
+  background: #e3efff;
+  color: #245a9c;
+}
+
+.cooperative-status-collected {
+  background: #e2f7e9;
+  color: #176b40;
+}
+
+.cooperative-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 13px 18px;
+  margin: 0;
+}
+
+.cooperative-details > div {
+  min-width: 0;
+}
+
+.cooperative-details dt {
+  margin-bottom: 4px;
+  color: #63746b;
+  font-size: 0.78rem;
+}
+
+.cooperative-details dd {
+  margin: 0;
+  color: #244c38;
+  font-size: 0.92rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.cooperative-record-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.cooperative-record-actions label {
+  flex: 1 1 220px;
+}
+
+.cooperative-overdue {
+  color: #a83232 !important;
+}
+
+.cooperative-message {
+  padding: 13px 16px;
+  border-radius: 11px;
+  background: #f0f8f3;
+  color: #345047;
+}
+
+.cooperative-error {
+  background: #fff0f0;
+  color: #9b1c1c;
+}
+
+.cooperative-error .inline-link {
+  margin-left: 8px;
+}
+
+.cooperative-success {
+  background: #e8f6ed;
+  color: #176b40;
+}
+
+.cooperative-empty-state {
+  margin-top: 16px;
+  padding: 28px;
+  text-align: center;
+}
+
+.cooperative-inventory-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0 0 20px;
+}
+
+.cooperative-inventory-summary article {
+  display: grid;
+  gap: 9px;
+  padding: 19px;
+  color: #63746b;
+}
+
+.cooperative-inventory-summary strong {
+  color: #173b2d;
+  font-size: clamp(1.35rem, 2.5vw, 1.9rem);
+}
+
+.cooperative-inventory-breakdown {
+  padding: 20px;
+  margin: 0 0 20px;
+}
+
+.cooperative-inventory-breakdown h2 {
+  margin: 0 0 10px;
+  color: #173b2d;
+  font-size: 1.05rem;
+}
+
+.cooperative-inventory-breakdown > p:not(.cooperative-empty) {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-top: 1px solid #e6eee8;
+  margin: 0;
+  color: #526e67;
+}
+
+.cooperative-inventory-breakdown strong {
+  color: #244c38;
+}
+
+.cooperative-empty {
+  color: #63746b;
+}
+
+.cooperative-heading-with-action {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+@media (max-width: 850px) {
+  .cooperative-filter-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cooperative-record-list {
+    grid-template-columns: 1fr;
+  }
+
+  .cooperative-inventory-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+}
+
+@media (max-width: 520px) {
+  .cooperative-filter-panel,
+  .cooperative-details {
+    grid-template-columns: 1fr;
+  }
+
+  .cooperative-heading-with-action {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .cooperative-inventory-summary {
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+  }
+
+  .cooperative-inventory-summary article {
+    padding: 14px;
+  }
+
+  .cooperative-record-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

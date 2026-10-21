@@ -4,6 +4,7 @@ import './App.css'
 import Navbar from './components/Navbar';
 import Footer from './components/footer';
 import AdminWorkspace from './components/AdminWorkspace.jsx'
+import CooperativeWorkspace from './components/cooperative/CooperativeWorkspace.jsx'
 import {
   FindCooperativesPage,
   ImpactReportsPage,
@@ -11,6 +12,7 @@ import {
   UrbanProfilePage,
   WasteGuidePage,
 } from './components/UrbanGeneratorPages.jsx'
+import PlatformUsersPage from './components/Admin/PlatformUsersPage.jsx';
 
 
 const roleLabels = {
@@ -20,6 +22,14 @@ const roleLabels = {
 }
 const completedListingStatuses = new Set(['COLLECTED', 'COMPLETED'])
 const pendingListingStatuses = new Set(['AVAILABLE', 'PENDING'])
+const cooperativeSections = [
+  'dashboard',
+  'pickup-schedule',
+  'waste-processing',
+  'inventory',
+  'collection-history',
+  'profile',
+]
 
 function getListingCreationTime(listing) {
   const timestamp = Date.parse(listing.createdAt || '')
@@ -199,12 +209,19 @@ function RoleDashboard({ user, listings, onCreate, onChangeStatus, onPickupHisto
             </>
           ) : renderListingCards(visibleListings)}
         </>
-  return <><section className="screen-shell role-dashboard-shell"><div className="dashboard-welcome"><div><p className="eyebrow">Your EcoConnect workspace</p><h1>{ownHeading}</h1><p>Welcome, {user?.fullName || 'EcoConnect member'}.</p></div></div><div className="dashboard-role-pill">{roleLabels[role] || roleLabels.URBAN_WASTE_GENERATOR} · {user?.email}</div><div className="dashboard-grid"><div className="panel-card stat-panel"><span>Total listings</span><strong>{showStatistics ? visibleListings.length : '—'}</strong></div><div className="panel-card stat-panel"><span>Awaiting pickup</span><strong>{showStatistics ? count('AVAILABLE') + count('PENDING') : '—'}</strong></div><div className="panel-card stat-panel"><span>In progress</span><strong>{showStatistics ? count('ACCEPTED') + count('SCHEDULED') + count('IN_PROGRESS') : '—'}</strong></div><div className="panel-card stat-panel"><span>Collected</span><strong>{showStatistics ? completed : '—'}</strong></div></div>
-    {role === 'URBAN_WASTE_GENERATOR' && <div className="dashboard-action-banner"><div><h3>Create a waste listing</h3><p>Tell nearby cooperatives what organic waste is ready for collection.</p></div><div className="dashboard-action-buttons"><button className="primary-button" onClick={onCreate}>+ Create listing</button><button className="secondary-button" onClick={onPickupHistory}>Pickup History</button></div></div>}
-    {isCoordinator && <div className="dashboard-action-banner"><div><h3>Steps 02–03 · Match, schedule and track</h3><p>Review available waste, accept a request, and mark collections as in progress or collected.</p></div><span className="workflow-mini-badge">Coordinator tools</span></div>}
-    {isAdmin && <div className="dashboard-action-banner"><div><h3>Platform oversight</h3><p>Review all listings and oversee matching and collection status across the platform.</p></div><span className="workflow-mini-badge">Admin tools</span></div>}
-    <div className="section-heading dashboard-list-heading"><div><p className="eyebrow">Live platform data</p><h2>{isCoordinator ? 'Requests to coordinate' : isAdmin ? 'All waste listings' : 'Your waste community'}</h2></div></div>
-    {error && <div className="form-message error-message" role="alert">{error} <button className="inline-link" type="button" onClick={onRetry}>Try again</button></div>}
+  return <><section className="screen-shell role-dashboard-shell"><div className="dashboard-welcome">
+  <div>
+    <p className="eyebrow">Your EcoConnect workspace</p>
+    <h1>{ownHeading}</h1>
+    <p>Welcome, {user?.fullName || 'EcoConnect member'}.</p>
+
+    {isCoordinator && user?.organizationName && (
+      <p className="organization-name">
+        Organization: {user.organizationName}
+      </p>
+    )}
+  </div>
+</div>
     {listingContent}
   </section><Footer /></>
 }
@@ -276,9 +293,42 @@ export default function App() {
   const [loadingCooperatives, setLoadingCooperatives] = useState(false)
   const [cooperativesError, setCooperativesError] = useState('')
   const listingsRequest = useRef(null)
-  const [dashboardSection, setDashboardSection] =
-  useState('dashboard');
+  const [dashboardSection, setDashboardSection] = useState(() => {
+    if (user?.role !== 'COOPERATIVE_COORDINATOR' || typeof window === 'undefined') return 'dashboard'
+    const section = window.location.hash.slice(1)
+    return cooperativeSections.includes(section) ? section : 'dashboard'
+  })
   const [notice, setNotice] = useState('')
+
+  useEffect(() => {
+  const pageTitles = {
+    home: 'Home',
+    'auth-choice': 'Join EcoConnect',
+    'role-select': 'Choose Your Role',
+    register: registrationSuccess
+      ? 'Registration Successful'
+      : 'Register',
+    login: 'Login',
+    'create-listing': 'Create Waste Listing',
+    'edit-listing': 'Edit Waste Listing',
+  }
+
+  const dashboardTitles = {
+    URBAN_WASTE_GENERATOR: 'Urban Waste Generator Dashboard',
+    COOPERATIVE_COORDINATOR: 'Cooperative Dashboard',
+    ADMIN: 'Admin Dashboard',
+  }
+
+  let title
+
+  if (screen === 'dashboard' && user) {
+    title = dashboardTitles[user.role] || 'Dashboard'
+  } else {
+    title = pageTitles[screen] || 'EcoConnect'
+  }
+
+  document.title = `${title} | EcoConnect`
+}, [screen, user?.role, registrationSuccess])
 
   const fetchListings = useCallback(async (role = user?.role) => {
     listingsRequest.current?.abort()
@@ -354,6 +404,19 @@ export default function App() {
     }
   }, [dashboardSection, fetchListings, screen, user])
   useEffect(() => {
+    if (user?.role !== 'COOPERATIVE_COORDINATOR') return undefined
+    const syncSectionFromLocation = () => {
+      const section = window.location.hash.slice(1)
+      setDashboardSection(cooperativeSections.includes(section) ? section : 'dashboard')
+    }
+    window.addEventListener('popstate', syncSectionFromLocation)
+    window.addEventListener('hashchange', syncSectionFromLocation)
+    return () => {
+      window.removeEventListener('popstate', syncSectionFromLocation)
+      window.removeEventListener('hashchange', syncSectionFromLocation)
+    }
+  }, [user?.role])
+  useEffect(() => {
     const handleLoginShortcut = (event) => { setLoginEmail(event.detail?.email || ''); setLoginError(''); setRegistrationError(''); setRegistrationSuccess(false); setNotice(''); setScreen('login') }
     window.addEventListener('ecoconnect-open-login', handleLoginShortcut)
     return () => window.removeEventListener('ecoconnect-open-login', handleLoginShortcut)
@@ -428,18 +491,21 @@ export default function App() {
     ],
     COOPERATIVE_COORDINATOR: [
       'dashboard',
-      'available-requests',
-      'accepted-pickups',
+      'pickup-schedule',
+      'waste-processing',
+      'inventory',
+      'collection-history',
       'profile',
     ],
-    ADMIN: [
-      'dashboard',
-      'approvals',
-      'pickups',
-      'complaints',
-      'impact',
-      'profile',
-    ],
+   ADMIN: [
+  'dashboard',
+  'approvals',
+  'pickups',
+  'complaints',
+  'impact',
+  'profile',
+  'platform-users',
+],
   };
 
   const section = href?.replace('#', '') || 'dashboard';
@@ -449,6 +515,9 @@ export default function App() {
     return;
   }
 
+  if (user.role === 'COOPERATIVE_COORDINATOR') {
+    window.history.pushState(null, '', `#${section}`)
+  }
   if (user.role === 'URBAN_WASTE_GENERATOR') void loadUrbanPageData(section)
   setDashboardSection(section);
 
@@ -468,7 +537,7 @@ export default function App() {
       if (!response.ok) throw new Error(data.message || 'Could not sign in. Check your email and password.')
       const signedInUser = { id: data.id, fullName: data.fullName, email: data.email, role: data.role, organizationName: data.organizationName, location: data.location }
       listingsRequest.current?.abort(); listingsRequest.current = null
-      sessionStorage.setItem('ecoconnect-user', JSON.stringify(signedInUser)); setListings([]); setListingToEdit(null); setLoadingListings(true); setUser(signedInUser); setLoginEmail(data.email); setDashboardSection('dashboard'); navigate('dashboard')
+      sessionStorage.setItem('ecoconnect-user', JSON.stringify(signedInUser)); setListings([]); setListingToEdit(null); setLoadingListings(true); setUser(signedInUser); setLoginEmail(data.email); setDashboardSection('dashboard'); if (signedInUser.role === 'COOPERATIVE_COORDINATOR') window.history.pushState(null, '', '#dashboard'); navigate('dashboard')
     } catch (error) { setLoginError(error.message || 'Unable to reach the EcoConnect API.') }
     finally { setSavingLogin(false) }
   }
@@ -574,7 +643,13 @@ export default function App() {
   else if (screen === 'login') content = <LoginPage onSubmit={handleLogin} error={loginError} busy={savingLogin} email={loginEmail} onEmailChange={setLoginEmail} onGoRegister={() => navigate('role-select')} />
   else if (screen === 'dashboard' && user?.role === 'URBAN_WASTE_GENERATOR') content = <UrbanGeneratorWorkspace section={dashboardSection} user={user} listings={listings} loadingListings={loadingListings} listingsError={listingsError} cooperatives={cooperatives} loadingCooperatives={loadingCooperatives} cooperativesError={cooperativesError} onCreate={() => navigate('create-listing')} onChangeStatus={handleStatusChange} onPickupHistory={() => navigateUrbanSection('pickup-history')} onEditListing={openEditListing} onDeleteListing={handleDeleteListing} deletingListingId={deletingListingId} onRetry={() => void fetchListings(user.role)} onNavigate={navigateUrbanSection} onLogout={logout} />
   else if (screen === 'dashboard' && user && dashboardSection === 'profile') content = <><AccountProfilePage user={user} onLogout={logout} /><Footer /></>
+  else if (
+  screen === 'dashboard' &&
+  user?.role === 'ADMIN' &&
+  dashboardSection === 'platform-users'
+) content = <><PlatformUsersPage /><Footer /></>
   else if (screen === 'dashboard' && user?.role === 'ADMIN' && dashboardSection !== 'dashboard') content = <><AdminWorkspace key={dashboardSection} section={dashboardSection} /><Footer /></>
+  else if (screen === 'dashboard' && user?.role === 'COOPERATIVE_COORDINATOR' && dashboardSection !== 'dashboard') content = <CooperativeWorkspace key={dashboardSection} section={dashboardSection} />
   else if (screen === 'dashboard' && user) content = <RoleDashboard user={user} listings={listings} onCreate={() => navigate('create-listing')} onChangeStatus={handleStatusChange} onRetry={() => void fetchListings(user.role)} busy={loadingListings} error={listingsError} />
   else if (screen === 'create-listing' && user?.role === 'URBAN_WASTE_GENERATOR') content = <><CreateListing user={user} onCancel={() => navigate('dashboard')} onSubmit={handleCreateListing} saving={savingListing} error={listingError} /><Footer /></>
   else if (screen === 'edit-listing' && user?.role === 'URBAN_WASTE_GENERATOR' && listingToEdit) content = <><CreateListing key={listingToEdit.id} user={user} listing={listingToEdit} onCancel={() => { setListingToEdit(null); navigate('dashboard') }} onSubmit={handleUpdateListing} saving={savingListing} error={listingError} /><Footer /></>
