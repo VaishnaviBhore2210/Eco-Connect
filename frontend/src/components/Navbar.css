@@ -106,7 +106,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 5px 0 5px 8px;
+  padding: 5px 8px;
   border: none;
   background: transparent;
   color: #245535;
@@ -114,19 +114,19 @@
 }
 
 .eco-avatar {
-  width: 38px;
-  height: 38px;
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
   border-radius: 50%;
   background: #dcebdd;
   color: #28643d;
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 700;
 }
 
 .eco-profile-name {
-  max-width: 145px;
+  max-width: 100px;
   overflow: hidden;
   color: #344b38;
   font-size: 13px;
@@ -145,6 +145,11 @@
   border-radius: 12px;
   background: #ffffff;
   box-shadow: 0 12px 32px rgba(31, 62, 39, 0.12);
+}
+
+.eco-profile-dropdown {
+  width: 184px;
+  padding: 7px;
 }
 
 .eco-join-dropdown {
@@ -188,6 +193,11 @@
 .eco-profile-summary span {
   color: #66776a;
   font-size: 11px;
+}
+
+.eco-profile-dropdown > button {
+  padding: 9px 10px;
+  font-size: 12px;
 }
 
 .eco-dropdown .eco-logout-button {
@@ -286,10 +296,214 @@
   }
 
   .eco-profile-name {
-    display: none;
+    max-width: 68px;
+    font-size: 12px;
   }
 
   .eco-dropdown {
     width: 190px;
   }
+}
+
+.eco-nav-links > a.active {
+  color: #28643d;
+  font-weight: 700;
+}
+
+.eco-nav-links > a.active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2px;
+  height: 2px;
+  border-radius: 2px;
+  background: #28643d;
+}
+
+.eco-profile-summary span + span {
+  overflow-wrap: anywhere;
+}
+
+.cooperative-navbar {
+  width: calc(100% - 24px);
+  margin: 10px auto 16px;
+  border: 1px solid #e1e9df;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(31, 62, 39, 0.06);
+}
+
+.cooperative-navbar .eco-nav-inner {
+  min-height: 78px;
+  padding: 10px 18px;
+  gap: 14px;
+}
+
+.cooperative-navbar .eco-nav-links {
+  gap: clamp(10px, 1.25vw, 20px);
+}
+
+.cooperative-navbar .eco-nav-links > a {
+  font-size: 13px;
+}
+
+.cooperative-navbar .eco-profile-button {
+  gap: 7px;
+}
+
+@media (max-width: 1150px) and (min-width: 901px) {
+  .cooperative-navbar .eco-nav-inner {
+    gap: 8px;
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .cooperative-navbar .eco-brand-copy small {
+    display: none;
+  }
+
+  .cooperative-navbar .eco-nav-links {
+    gap: 9px;
+  }
+
+  .cooperative-navbar .eco-nav-links > a {
+    font-size: 12px;
+  }
+}
+
+.admin-navbar {
+  border: 1px solid #e1e9df;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: none;
+}
+
+.admin-navbar .eco-nav-inner {
+  min-height: 96px;
+  padding: 22px 16px;
+  gap: 18px;
+}
+
+.admin-navbar .eco-brand {
+  gap: 12px;
+}
+
+.admin-navbar .eco-brand-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 13px;
+  background: #e6f3e9;
+}
+
+.admin-navbar .eco-brand-copy strong {
+  color: #173b2d;
+  font-size: 23px;
+  font-weight: 700;
+}
+
+.admin-navbar .eco-brand-copy small {
+  font-size: 11px;
+}
+
+.admin-navbar .eco-nav-links {
+  gap: 8px;
+}
+
+.admin-navbar .eco-nav-links > a {
+  padding: 11px 14px;
+  border-radius: 12px;
+  color: #263b32;
+  font-size: 18px;
+}
+
+.admin-navbar .eco-nav-links > a.active,
+.admin-navbar .eco-nav-links > a.active:hover {
+  background: #e6f3e9;
+  color: #245535;
+}
+
+.admin-navbar .eco-nav-links > a.active::after {
+  display: none;
+}
+
+.admin-navbar .eco-profile-button {
+  gap: 8px;
+}
+
+.admin-navbar .eco-avatar {
+  width: 32px;
+  height: 32px;
+  background: #e6f3e9;
+}
+
+.admin-navbar .eco-profile-name {
+  color: #344b38;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.admin-navbar .eco-profile-chevron {
+  color: #355144;
+  font-size: 18px;
+}
+
+@media (max-width: 900px) {
+  .admin-navbar .eco-nav-links {
+    gap: 5px;
+  }
+
+  .admin-navbar .eco-nav-links > a {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 900px) {
+  .eco-nav-links > a.active::after {
+    display: none;
+  }
+
+  .eco-nav-links > a.active {
+    background: #f0f6ef;
+  }
+}
+.platform-users-section {
+  min-width: 260px;
+  max-width: 340px;
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.platform-users-section h3 {
+  margin: 12px 0;
+}
+
+.platform-users-section details {
+  padding: 10px 0;
+  border-top: 1px solid #e2e8e3;
+}
+
+.platform-users-section summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.platform-users-section ul {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+}
+
+.platform-users-section li {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 0;
+  overflow-wrap: anywhere;
+}
+
+.platform-users-section li span,
+.platform-users-section details > p {
+  font-size: 12px;
+  color: #647568;
 }

@@ -42,6 +42,7 @@ export default function Navbar({
   const [profileOpen, setProfileOpen] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);
   const profileRef = useRef(null);
+ 
 
   const normalizedRole = String(role).toUpperCase();
   const isPublic = !user || normalizedRole === 'PUBLIC';
@@ -197,6 +198,16 @@ export default function Navbar({
                   <span>{roleName}</span>
                   <span>{user?.email || 'Email not provided'}</span>
                 </div>
+                 
+              {isAdmin && (
+  <button
+    type="button"
+    role="menuitem"
+    onClick={() => navigate('#platform-users', 'Platform Users')}
+  >
+    Platform Users
+  </button>
+)}   
 
                 <button
                   type="button"

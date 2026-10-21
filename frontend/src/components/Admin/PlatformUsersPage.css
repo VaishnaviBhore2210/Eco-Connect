@@ -1,0 +1,123 @@
+
+.platform-users-page {
+  width: min(1200px, 94%);
+  margin: 32px auto;
+  color: var(--text-primary, #20352d);
+}
+
+.platform-users-page-heading {
+  margin-bottom: 24px;
+}
+
+.platform-users-page-heading h1 {
+  margin: 6px 0;
+  font-size: clamp(26px, 4vw, 36px);
+}
+
+.platform-users-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.platform-users-summary article,
+.platform-users-card {
+  background: var(--card-background, #fff);
+  border: 1px solid #e0e9e3;
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.platform-users-summary article {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.platform-users-summary article span {
+  font-size: 14px;
+  color: #64756b;
+}
+
+.platform-users-summary article strong {
+  font-size: 30px;
+}
+
+.platform-users-card {
+  margin-bottom: 24px;
+}
+
+.platform-users-card-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.platform-users-card-heading h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.platform-users-card-heading span {
+  font-size: 13px;
+  color: #64756b;
+}
+
+.platform-users-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.platform-users-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.platform-users-table th,
+.platform-users-table td {
+  padding: 13px 12px;
+  border-bottom: 1px solid #e7ede9;
+  font-size: 14px;
+  vertical-align: top;
+}
+
+.platform-users-table th {
+  background: #f3f7f4;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.platform-users-table td {
+  overflow-wrap: anywhere;
+}
+
+.platform-users-empty {
+  text-align: center;
+  color: #64756b;
+  padding: 24px !important;
+}
+
+.platform-users-error {
+  color: #b42318;
+  padding: 14px;
+  background: #fff1f0;
+  border-radius: 8px;
+}
+
+@media (max-width: 700px) {
+  .platform-users-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .platform-users-page {
+    width: 94%;
+  }
+
+  .platform-users-card {
+    padding: 12px;
+  }
+}
