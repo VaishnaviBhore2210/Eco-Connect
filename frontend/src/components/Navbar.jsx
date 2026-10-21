@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import './Navbar.css';
 
 const navigationByRole = {
@@ -11,22 +11,24 @@ const navigationByRole = {
   ],
   COOPERATIVE_COORDINATOR: [
     { label: 'Dashboard', href: '#dashboard' },
-    { label: 'Available Requests', href: '#available-requests' },
-    { label: 'Accepted Pickups', href: '#accepted-pickups' },
-    { label: 'Profile', href: '#profile' },
+    { label: 'Pickup Schedule', href: '#pickup-schedule' },
+    { label: 'Waste Processing', href: '#waste-processing' },
+    { label: 'Inventory', href: '#inventory' },
+    { label: 'Collection History', href: '#collection-history' },
   ],
   ADMIN: [
     { label: 'Dashboard', href: '#dashboard' },
-    { label: 'Users', href: '#users' },
-    { label: 'Listings', href: '#listings' },
-    { label: 'Reports', href: '#reports' },
+    { label: 'Approvals', href: '#approvals' },
+    { label: 'Pickups', href: '#pickups' },
+    { label: 'Complaints', href: '#complaints' },
+    { label: 'Impact', href: '#impact' },
   ],
 };
 
 const roleLabels = {
   URBAN_WASTE_GENERATOR: 'Urban Waste Generator',
   COOPERATIVE_COORDINATOR: 'Cooperative Coordinator',
-  ADMIN: 'Administrator',
+  ADMIN: 'EcoConnect Administrator',
 };
 
 export default function Navbar({
@@ -39,9 +41,12 @@ export default function Navbar({
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);
+  const profileRef = useRef(null);
 
   const normalizedRole = String(role).toUpperCase();
   const isPublic = !user || normalizedRole === 'PUBLIC';
+  const isAdmin = normalizedRole === 'ADMIN';
+  const isCoordinator = normalizedRole === 'COOPERATIVE_COORDINATOR';
 
   const links = isPublic
     ? [
@@ -53,6 +58,26 @@ export default function Navbar({
 
   const userName =
     user?.fullName || user?.name || user?.email || 'User';
+  const firstName = userName.trim().split(/\s+/)[0] || 'User';
+  const roleName = roleLabels[normalizedRole] || 'EcoConnect member';
+
+  useEffect(() => {
+    if (!profileOpen) return undefined;
+
+    const closeOnOutsideClick = (event) => {
+      if (!profileRef.current?.contains(event.target)) setProfileOpen(false);
+    };
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setProfileOpen(false);
+    };
+
+    document.addEventListener('pointerdown', closeOnOutsideClick);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsideClick);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [profileOpen]);
 
   const navigate = (href, label) => {
     setMenuOpen(false);
@@ -67,7 +92,7 @@ export default function Navbar({
   };
 
   return (
-    <header className="eco-navbar">
+    <header className={`eco-navbar${isAdmin ? ' admin-navbar' : ''}${isCoordinator ? ' cooperative-navbar' : ''}`}>
       <div className="eco-nav-inner">
         <a
           className="eco-brand"
@@ -149,42 +174,43 @@ export default function Navbar({
         </nav>
 
         {!isPublic && (
-          <div className="eco-profile-wrap">
+          <div className="eco-profile-wrap" ref={profileRef}>
             <button
               type="button"
               className="eco-profile-button"
               onClick={() => setProfileOpen((open) => !open)}
               aria-expanded={profileOpen}
-              aria-label="Open user profile menu"
+              aria-haspopup="menu"
+              aria-label={`Open profile menu for ${userName}`}
             >
               <span className="eco-avatar">
-                {userName.charAt(0).toUpperCase()}
+                {firstName.charAt(0).toUpperCase()}
               </span>
-              <span className="eco-profile-name">{userName}</span>
-              <span aria-hidden="true">⌄</span>
+              <span className="eco-profile-name">{firstName}</span>
+              <span className="eco-profile-chevron" aria-hidden="true">⌄</span>
             </button>
 
             {profileOpen && (
-              <div className="eco-dropdown eco-profile-dropdown">
+              <div className="eco-dropdown eco-profile-dropdown" role="menu">
                 <div className="eco-profile-summary">
                   <strong>{userName}</strong>
-                  <span>{roleLabels[normalizedRole] || 'User'}</span>
-                  <span>{user?.email}</span>
+                  <span>{roleName}</span>
+                  <span>{user?.email || 'Email not provided'}</span>
                 </div>
 
-                {normalizedRole !== 'ADMIN' && (
-                  <button
-                    type="button"
-                    onClick={() => navigate('#profile', 'Profile')}
-                  >
-                    My Profile
-                  </button>
-                )}
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => navigate('#profile', 'Profile')}
+                >
+                  My Profile
+                </button>
 
                 {onLogout && (
                   <button
                     type="button"
                     className="eco-logout-button"
+                    role="menuitem"
                     onClick={() => {
                       setProfileOpen(false);
                       setMenuOpen(false);
