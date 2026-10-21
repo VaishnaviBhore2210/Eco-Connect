@@ -3,6 +3,7 @@ import RegisterPage from './RegisterPage.jsx'
 import './App.css'
 import Navbar from './components/Navbar';
 import Footer from './components/footer';
+import AdminWorkspace from './components/AdminWorkspace.jsx'
 import {
   FindCooperativesPage,
   ImpactReportsPage,
@@ -15,9 +16,9 @@ import {
 const roleLabels = {
   URBAN_WASTE_GENERATOR: 'Urban Waste Generator',
   COOPERATIVE_COORDINATOR: 'Cooperative Coordinator',
-  ADMIN: 'Administrator',
+  ADMIN: 'EcoConnect Administrator',
 }
-const completedListingStatuses = new Set(['COLLECTED', 'COMPLETED', 'CLOSED'])
+const completedListingStatuses = new Set(['COLLECTED', 'COMPLETED'])
 const pendingListingStatuses = new Set(['AVAILABLE', 'PENDING'])
 
 function getListingCreationTime(listing) {
@@ -45,19 +46,26 @@ function sortGeneratorListings(listings) {
   })
 }
 
+function sortAdminListings(listings) {
+  return [...listings].sort((first, second) => {
+    const getGroup = (listing) => {
+      const status = String(listing.status || '').toUpperCase()
+      if (completedListingStatuses.has(status)) return 2
+      if (pendingListingStatuses.has(status)) return 0
+      return 1
+    }
+    return getGroup(first) - getGroup(second)
+      || getListingCreationTime(second) - getListingCreationTime(first)
+      || Number(second.id || 0) - Number(first.id || 0)
+  })
+}
+
 const workflow = [
   { number: '01', title: 'Create a waste listing', text: 'Urban users add waste type, quantity, and pickup location in minutes.' },
   { number: '02', title: 'Match with a cooperative', text: 'EcoConnect helps coordinators find available waste listings that fit their location and capacity.' },
   { number: '03', title: 'Schedule and track pickup', text: 'Cooperatives accept requests and update collection progress from their dashboard.' },
   { number: '04', title: 'Measure impact', text: 'Generators and administrators track collection progress and community impact.' },
 ]
-const initialMetrics = [
-  { value: '50', label: 'households connected' },
-  { value: '10', label: 'cooperatives active' },
-  { value: '12T', label: 'organic waste diverted' },
-  { value: '96%', label: 'pickup success rate' },
-]
-
 function HomePage({ onJoin, onListWaste }) {
   return <>
     <section className="hero-section" id="about">
@@ -66,7 +74,6 @@ function HomePage({ onJoin, onListWaste }) {
         <h1>Turn organic waste into community impact.</h1>
         <p className="lead">EcoConnect connects urban waste generators with rural women-led cooperatives to collect, process, and repurpose organic waste into valuable resources.</p>
         <div className="cta-row"><button className="primary-button" onClick={onListWaste}>List waste</button><button className="secondary-button" onClick={onJoin}>Join EcoConnect</button></div>
-        <div className="stats-grid">{initialMetrics.map((metric) => <div className="stat-card" key={metric.label}><strong>{metric.value}</strong><span>{metric.label}</span></div>)}</div>
       </div>
       <div className="hero-visual"><div className="visual-card highlight-card"><span className="card-label">EcoConnect workflow</span><h3>Organic waste, put to good use</h3><ul><li>Connect generators with cooperatives</li><li>Coordinate pickups</li><li>Measure community impact</li></ul></div><div className="mini-dashboard"><div className="dashboard-item"><span className="dashboard-tag success">Connected</span><strong>Waste meets the right partner</strong></div><div className="dashboard-item"><span className="dashboard-tag neutral">Impact</span><strong>Cleaner communities</strong></div></div></div>
     </section>
@@ -93,13 +100,43 @@ function RoleChooser({ onChoose, onBack }) {
   return <section className="auth-page-centered"><div className="auth-card-centered role-chooser-card"><p className="eyebrow">Create your account</p><h2>Choose your role</h2><p className="form-intro">Choose how you will use EcoConnect. Administrator access is managed separately.</p><div className="role-choice-list">{options.map((item) => <button type="button" key={item.value} className="role-choice" onClick={() => onChoose(item.value)}><span className="role-choice-icon">{item.icon}</span><span className="role-choice-copy"><strong>{item.title}</strong><small>{item.description}</small></span><span className="role-choice-arrow">→</span></button>)}</div><button type="button" className="text-button" onClick={onBack}>← Back</button></div></section>
 }
 
-function RoleDashboard({ user, listings, onCreate, onChangeStatus, onPickupHistory, onEditListing, onDeleteListing, deletingListingId, busy, error }) {
+function AccountProfilePage({ user, onLogout }) {
+  const name = user?.fullName || 'Not provided'
+  const role = roleLabels[user?.role] || 'EcoConnect member'
+
+  return (
+    <section className="screen-shell urban-page-shell">
+      <div className="urban-page-heading">
+        <p className="eyebrow">Account details</p>
+        <h1>My Profile</h1>
+        <p>Review the details associated with your EcoConnect account.</p>
+      </div>
+      <article className="panel-card urban-profile-card">
+        <div className="urban-profile-avatar" aria-hidden="true">
+          {(name === 'Not provided' ? user?.email || 'U' : name).charAt(0).toUpperCase()}
+        </div>
+        <dl className="cooperative-details">
+          <div><dt>Full name</dt><dd>{name}</dd></div>
+          <div><dt>Email</dt><dd>{user?.email || 'Not provided'}</dd></div>
+          <div><dt>Role</dt><dd>{role}</dd></div>
+          {user?.organizationName && <div><dt>Organization</dt><dd>{user.organizationName}</dd></div>}
+          {user?.location && <div><dt>Location</dt><dd>{user.location}</dd></div>}
+        </dl>
+        <button className="secondary-button urban-logout-button" type="button" onClick={onLogout}>Log out</button>
+      </article>
+    </section>
+  )
+}
+
+function RoleDashboard({ user, listings, onCreate, onChangeStatus, onPickupHistory, onEditListing, onDeleteListing, deletingListingId, onRetry, busy, error }) {
   const role = user?.role || 'URBAN_WASTE_GENERATOR'
   const isAdmin = role === 'ADMIN'
   const isCoordinator = role === 'COOPERATIVE_COORDINATOR'
   const isUrbanGenerator = role === 'URBAN_WASTE_GENERATOR'
   const ownHeading = isAdmin ? 'Administrator dashboard' : isCoordinator ? 'Cooperative dashboard' : 'Urban generator dashboard'
-  const visibleListings = isUrbanGenerator ? sortGeneratorListings(listings) : listings
+  const visibleListings = isUrbanGenerator
+    ? sortGeneratorListings(listings)
+    : isAdmin ? sortAdminListings(listings) : listings
   const completedListings = isUrbanGenerator
     ? visibleListings.filter((listing) => completedListingStatuses.has(String(listing.status || '').toUpperCase()))
     : []
@@ -110,6 +147,7 @@ function RoleDashboard({ user, listings, onCreate, onChangeStatus, onPickupHisto
   const completed = isUrbanGenerator
     ? completedListings.length
     : count('COLLECTED') + count('COMPLETED')
+  const showStatistics = !busy && !error
   const renderListingCards = (group) => (
     <div className="listing-grid">{group.map((item) => {
       const status = String(item.status || '').toUpperCase()
@@ -117,13 +155,21 @@ function RoleDashboard({ user, listings, onCreate, onChangeStatus, onPickupHisto
       return (
         <article className="panel-card listing-card" key={item.id}>
           <div className="listing-topline">
-            <span className="listing-tag">{item.wasteType}</span>
-            <span className={`status-pill status-${status.toLowerCase()}`}>{status.replaceAll('_', ' ')}</span>
+            <span className="listing-tag">{item.wasteType || 'Waste type not provided'}</span>
+            <span className={`status-pill status-${(status || 'unknown').toLowerCase()}`}>{status ? status.replaceAll('_', ' ') : 'Status not recorded'}</span>
           </div>
-          <h3>{item.quantityKg} kg</h3>
-          <p>{item.location}</p>
+          <h3>{item.quantityKg != null ? `${item.quantityKg} kg` : 'Quantity not recorded'}</h3>
+          <p>{item.location || 'Location not provided'}</p>
           {item.description && <p>{item.description}</p>}
-          <div className="listing-meta"><span>Contact</span><strong>{item.contactName || 'EcoConnect user'}</strong></div>
+          {isAdmin && <div className="listing-meta"><span>Listing ID</span><strong>#{item.id}</strong></div>}
+          <div className="listing-meta"><span>Contact</span><strong>{item.contactName || 'Not provided'}</strong></div>
+          {isAdmin && (
+            <>
+              <div className="listing-meta"><span>Contact phone</span><strong>{item.contactPhone || 'Not provided'}</strong></div>
+              <div className="listing-meta"><span>Generator account</span><strong>{item.createdByEmail || 'Not recorded'}</strong></div>
+              <div className="listing-meta"><span>Created</span><strong>{item.createdAt ? new Date(item.createdAt).toLocaleString() : 'Not recorded'}</strong></div>
+            </>
+          )}
           {(isCoordinator || isAdmin) && <div className="listing-status-actions">{status === 'AVAILABLE' && <button className="secondary-button" onClick={() => onChangeStatus(item.id, 'ACCEPTED')}>Accept pickup</button>}{['ACCEPTED', 'SCHEDULED'].includes(status) && <button className="secondary-button" onClick={() => onChangeStatus(item.id, 'IN_PROGRESS')}>Start pickup</button>}{status === 'IN_PROGRESS' && <button className="primary-button" onClick={() => onChangeStatus(item.id, 'COLLECTED')}>Mark collected</button>}</div>}
           {isUrbanGenerator && (
             <div className="listing-owner-actions">
@@ -144,11 +190,8 @@ function RoleDashboard({ user, listings, onCreate, onChangeStatus, onPickupHisto
   const listingContent = busy
     ? <p className="form-intro" role="status">Loading waste listings…</p>
     : visibleListings.length === 0
-      ? error
-        ? <p className="listing-load-error" role="alert">{error}</p>
-        : <div className="empty-state panel-card"><span>♻️</span><h3>No waste listings yet</h3><p>{isCoordinator ? 'New listings from generators will appear here.' : 'Create the first listing to start the collection process.'}</p>{role === 'URBAN_WASTE_GENERATOR' && <button className="primary-button" onClick={onCreate}>Create a listing</button>}</div>
+      ? <div className="empty-state panel-card"><span>♻️</span><h3>No waste listings yet</h3><p>{isCoordinator ? 'New listings from generators will appear here.' : isAdmin ? 'Waste listings from EcoConnect users will appear here.' : 'Create the first listing to start the collection process.'}</p>{role === 'URBAN_WASTE_GENERATOR' && <button className="primary-button" onClick={onCreate}>Create a listing</button>}</div>
       : <>
-          {error && <p className="listing-load-error" role="alert">{error}</p>}
           {isUrbanGenerator ? (
             <>
               {activeListings.length > 0 && <section className="dashboard-listing-group"><h3>Active &amp; Recent Listings</h3>{renderListingCards(activeListings)}</section>}
@@ -156,11 +199,12 @@ function RoleDashboard({ user, listings, onCreate, onChangeStatus, onPickupHisto
             </>
           ) : renderListingCards(visibleListings)}
         </>
-  return <><section className="screen-shell role-dashboard-shell"><div className="dashboard-welcome"><div><p className="eyebrow">Your EcoConnect workspace</p><h1>{ownHeading}</h1><p>Welcome, {user?.fullName || 'EcoConnect member'}.</p></div></div><div className="dashboard-role-pill">{roleLabels[role] || roleLabels.URBAN_WASTE_GENERATOR} · {user?.email}</div><div className="dashboard-grid"><div className="panel-card stat-panel"><span>Total listings</span><strong>{visibleListings.length}</strong></div><div className="panel-card stat-panel"><span>Awaiting pickup</span><strong>{count('AVAILABLE') + count('PENDING')}</strong></div><div className="panel-card stat-panel"><span>In progress</span><strong>{count('ACCEPTED') + count('SCHEDULED') + count('IN_PROGRESS')}</strong></div><div className="panel-card stat-panel"><span>Collected</span><strong>{completed}</strong></div></div>
+  return <><section className="screen-shell role-dashboard-shell"><div className="dashboard-welcome"><div><p className="eyebrow">Your EcoConnect workspace</p><h1>{ownHeading}</h1><p>Welcome, {user?.fullName || 'EcoConnect member'}.</p></div></div><div className="dashboard-role-pill">{roleLabels[role] || roleLabels.URBAN_WASTE_GENERATOR} · {user?.email}</div><div className="dashboard-grid"><div className="panel-card stat-panel"><span>Total listings</span><strong>{showStatistics ? visibleListings.length : '—'}</strong></div><div className="panel-card stat-panel"><span>Awaiting pickup</span><strong>{showStatistics ? count('AVAILABLE') + count('PENDING') : '—'}</strong></div><div className="panel-card stat-panel"><span>In progress</span><strong>{showStatistics ? count('ACCEPTED') + count('SCHEDULED') + count('IN_PROGRESS') : '—'}</strong></div><div className="panel-card stat-panel"><span>Collected</span><strong>{showStatistics ? completed : '—'}</strong></div></div>
     {role === 'URBAN_WASTE_GENERATOR' && <div className="dashboard-action-banner"><div><h3>Create a waste listing</h3><p>Tell nearby cooperatives what organic waste is ready for collection.</p></div><div className="dashboard-action-buttons"><button className="primary-button" onClick={onCreate}>+ Create listing</button><button className="secondary-button" onClick={onPickupHistory}>Pickup History</button></div></div>}
     {isCoordinator && <div className="dashboard-action-banner"><div><h3>Steps 02–03 · Match, schedule and track</h3><p>Review available waste, accept a request, and mark collections as in progress or collected.</p></div><span className="workflow-mini-badge">Coordinator tools</span></div>}
     {isAdmin && <div className="dashboard-action-banner"><div><h3>Platform oversight</h3><p>Review all listings and oversee matching and collection status across the platform.</p></div><span className="workflow-mini-badge">Admin tools</span></div>}
     <div className="section-heading dashboard-list-heading"><div><p className="eyebrow">Live platform data</p><h2>{isCoordinator ? 'Requests to coordinate' : isAdmin ? 'All waste listings' : 'Your waste community'}</h2></div></div>
+    {error && <div className="form-message error-message" role="alert">{error} <button className="inline-link" type="button" onClick={onRetry}>Try again</button></div>}
     {listingContent}
   </section><Footer /></>
 }
@@ -180,6 +224,7 @@ function UrbanGeneratorWorkspace({
   onEditListing,
   onDeleteListing,
   deletingListingId,
+  onRetry,
   onNavigate,
   onLogout,
 }) {
@@ -196,7 +241,7 @@ function UrbanGeneratorWorkspace({
   } else if (section === 'profile') {
     page = <UrbanProfilePage user={user} onLogout={onLogout} />
   } else {
-    page = <RoleDashboard user={user} listings={listings} onCreate={onCreate} onChangeStatus={onChangeStatus} onPickupHistory={onPickupHistory} onEditListing={onEditListing} onDeleteListing={onDeleteListing} deletingListingId={deletingListingId} busy={loadingListings} error={listingsError} />
+    page = <RoleDashboard user={user} listings={listings} onCreate={onCreate} onChangeStatus={onChangeStatus} onPickupHistory={onPickupHistory} onEditListing={onEditListing} onDeleteListing={onDeleteListing} deletingListingId={deletingListingId} onRetry={onRetry} busy={loadingListings} error={listingsError} />
   }
 
   return <>{page}{section === 'dashboard' ? null : <Footer />}</>
@@ -225,7 +270,7 @@ export default function App() {
   const [listingToEdit, setListingToEdit] = useState(null)
   const [deletingListingId, setDeletingListingId] = useState(null)
   const [listings, setListings] = useState([])
-  const [loadingListings, setLoadingListings] = useState(false)
+  const [loadingListings, setLoadingListings] = useState(Boolean(user))
   const [listingsError, setListingsError] = useState('')
   const [cooperatives, setCooperatives] = useState([])
   const [loadingCooperatives, setLoadingCooperatives] = useState(false)
@@ -244,10 +289,23 @@ export default function App() {
     try {
       const endpoint = role === 'URBAN_WASTE_GENERATOR'
         ? '/api/waste-listings/mine'
+        : role === 'ADMIN'
+          ? '/api/admin/pickups'
         : '/api/waste-listings'
       const response = await fetch(endpoint, { credentials: 'same-origin', signal: request.signal })
       const data = await response.json().catch(() => ({}))
-      if (!response.ok) throw new Error(data.message || 'Could not load listings.')
+      const apiMessage = typeof data.message === 'string' ? data.message : ''
+      if (!response.ok) {
+        if (/\bregistration\b|\bregister\b/i.test(apiMessage)) {
+          console.error('Listings API returned a legacy registration error response:', response.status)
+          throw new Error('Could not load waste listings. Please try again.')
+        }
+        if (response.status >= 500) {
+          console.error('Listings API request failed:', response.status)
+          throw new Error('Could not load waste listings. Please try again.')
+        }
+        throw new Error(apiMessage || 'Could not load listings.')
+      }
       if (!Array.isArray(data)) throw new Error('The listings API returned an unexpected response.')
       if (request.signal.aborted) return null
       setListings(data)
@@ -255,6 +313,7 @@ export default function App() {
     } catch (error) {
       if (request.signal.aborted) return null
       console.error(error)
+      setListings([])
       const message = error.message || 'Could not connect to the listings API. Make sure the Spring Boot backend is running.'
       setListingsError(message)
       return null
@@ -286,15 +345,21 @@ export default function App() {
   }
 
   useEffect(() => {
-    if (user && screen === 'dashboard') void fetchListings(user.role)
+    if (
+      user &&
+      screen === 'dashboard' &&
+      (user.role !== 'ADMIN' || dashboardSection === 'dashboard')
+    ) {
+      void fetchListings(user.role)
+    }
   }, [dashboardSection, fetchListings, screen, user])
   useEffect(() => {
-    const handleLoginShortcut = (event) => { setLoginEmail(event.detail?.email || ''); setLoginError(''); setScreen('login') }
+    const handleLoginShortcut = (event) => { setLoginEmail(event.detail?.email || ''); setLoginError(''); setRegistrationError(''); setRegistrationSuccess(false); setNotice(''); setScreen('login') }
     window.addEventListener('ecoconnect-open-login', handleLoginShortcut)
     return () => window.removeEventListener('ecoconnect-open-login', handleLoginShortcut)
   }, [])
 
-  const navigate = (next) => { setScreen(next); setNotice(''); setLoginError(''); setRegistrationError(''); setListingError(''); window.scrollTo({ top: 0, behavior: 'smooth' }) }
+  const navigate = (next) => { setScreen(next); setNotice(''); setLoginError(''); setRegistrationError(''); setListingError(''); if (next === 'login' || next === 'role-select' || next === 'register') setRegistrationSuccess(false); window.scrollTo({ top: 0, behavior: 'smooth' }) }
   const navigateUrbanSection = (section) => {
     if (user?.role !== 'URBAN_WASTE_GENERATOR') return
     void loadUrbanPageData(section)
@@ -369,9 +434,11 @@ export default function App() {
     ],
     ADMIN: [
       'dashboard',
-      'users',
-      'listings',
-      'reports',
+      'approvals',
+      'pickups',
+      'complaints',
+      'impact',
+      'profile',
     ],
   };
 
@@ -393,7 +460,7 @@ export default function App() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
   const handleLogin = async (event) => {
-    event.preventDefault(); setSavingLogin(true); setLoginError('')
+    event.preventDefault(); setSavingLogin(true); setLoginError(''); setRegistrationError(''); setNotice('')
     const form = new FormData(event.currentTarget)
     try {
       const response = await fetch('/api/users/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: form.get('email'), password: form.get('password') }) })
@@ -401,12 +468,12 @@ export default function App() {
       if (!response.ok) throw new Error(data.message || 'Could not sign in. Check your email and password.')
       const signedInUser = { id: data.id, fullName: data.fullName, email: data.email, role: data.role, organizationName: data.organizationName, location: data.location }
       listingsRequest.current?.abort(); listingsRequest.current = null
-      sessionStorage.setItem('ecoconnect-user', JSON.stringify(signedInUser)); setListings([]); setListingToEdit(null); setLoadingListings(false); setUser(signedInUser); setLoginEmail(data.email); setDashboardSection('dashboard'); navigate('dashboard')
+      sessionStorage.setItem('ecoconnect-user', JSON.stringify(signedInUser)); setListings([]); setListingToEdit(null); setLoadingListings(true); setUser(signedInUser); setLoginEmail(data.email); setDashboardSection('dashboard'); navigate('dashboard')
     } catch (error) { setLoginError(error.message || 'Unable to reach the EcoConnect API.') }
     finally { setSavingLogin(false) }
   }
   const handleRegister = async (event) => {
-    event.preventDefault(); setSavingRegistration(true); setRegistrationError(''); setRegistrationSuccess(false)
+    event.preventDefault(); setSavingRegistration(true); setRegistrationError(''); setLoginError(''); setNotice(''); setRegistrationSuccess(false)
     const form = new FormData(event.currentTarget); const values = Object.fromEntries(form.entries())
     if (values.password !== values.confirmPassword) { setRegistrationError('The passwords do not match.'); setSavingRegistration(false); return }
     const payload = { fullName: values.fullName, email: values.email, password: values.password, role: values.role, organizationName: values.organizationName || null, location: values.location }
@@ -489,10 +556,14 @@ export default function App() {
     try {
       const response = await fetch(`/api/waste-listings/${id}/status`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) })
       const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.message || 'Could not update listing status.')
-      setListings((current) => current.map((item) => item.id === id ? data : item)); setNotice(`Listing status updated to ${status.replaceAll('_', ' ').toLowerCase()}.`)
+      setListings((current) => current.map((item) => item.id === id ? data : item))
+      const refreshedListings = await fetchListings(user?.role)
+      setNotice(refreshedListings
+        ? `Listing status updated to ${status.replaceAll('_', ' ').toLowerCase()}.`
+        : 'The listing status was updated, but the dashboard could not refresh. Reload to verify the latest data.')
     } catch (error) { setNotice(error.message || 'Could not update listing status.') }
   }
-  const logout = async () => { try { await fetch('/api/users/logout', { method: 'POST' }) } catch (error) { console.error(error) } listingsRequest.current?.abort(); listingsRequest.current = null; sessionStorage.removeItem('ecoconnect-user'); setListings([]); setListingToEdit(null); setLoadingListings(false); setListingsError(''); setUser(null); setDashboardSection('dashboard'); navigate('home'); setNotice('You have been logged out.') }
+  const logout = async () => { const email = user?.email || ''; try { await fetch('/api/users/logout', { method: 'POST' }) } catch (error) { console.error(error) } listingsRequest.current?.abort(); listingsRequest.current = null; sessionStorage.removeItem('ecoconnect-user'); setListings([]); setListingToEdit(null); setLoadingListings(false); setListingsError(''); setUser(null); setDashboardSection('dashboard'); setLoginEmail(email); navigate('login') }
 
   let content
   if (screen === 'home') content = <HomePage onJoin={() => navigate('auth-choice')} onListWaste={() => user ? navigate('create-listing') : navigate('auth-choice')} />
@@ -501,8 +572,10 @@ export default function App() {
   else if (screen === 'register' && registrationSuccess) content = <section className="registration-success-wrap"><div className="registration-success-card" role="status"><div className="registration-success-icon">✓</div><p className="registration-success-eyebrow">ACCOUNT CREATED</p><h2>Registration Successful!</h2><p className="registration-success-message">Your EcoConnect account has been created successfully. You can now log in to continue.</p><p className="success-email-line">Registered email: <strong>{loginEmail}</strong></p><button className="go-to-login-button" onClick={() => navigate('login')}>Go to Login <span>→</span></button></div></section>
   else if (screen === 'register') content = <RegisterPage onSubmit={handleRegister} saving={savingRegistration} error={registrationError} selectedRole={selectedRole} onChangeRole={setSelectedRole} />
   else if (screen === 'login') content = <LoginPage onSubmit={handleLogin} error={loginError} busy={savingLogin} email={loginEmail} onEmailChange={setLoginEmail} onGoRegister={() => navigate('role-select')} />
-  else if (screen === 'dashboard' && user?.role === 'URBAN_WASTE_GENERATOR') content = <UrbanGeneratorWorkspace section={dashboardSection} user={user} listings={listings} loadingListings={loadingListings} listingsError={listingsError} cooperatives={cooperatives} loadingCooperatives={loadingCooperatives} cooperativesError={cooperativesError} onCreate={() => navigate('create-listing')} onChangeStatus={handleStatusChange} onPickupHistory={() => navigateUrbanSection('pickup-history')} onEditListing={openEditListing} onDeleteListing={handleDeleteListing} deletingListingId={deletingListingId} onNavigate={navigateUrbanSection} onLogout={logout} />
-  else if (screen === 'dashboard' && user) content = <RoleDashboard user={user} listings={listings} onCreate={() => navigate('create-listing')} onChangeStatus={handleStatusChange} busy={loadingListings} />
+  else if (screen === 'dashboard' && user?.role === 'URBAN_WASTE_GENERATOR') content = <UrbanGeneratorWorkspace section={dashboardSection} user={user} listings={listings} loadingListings={loadingListings} listingsError={listingsError} cooperatives={cooperatives} loadingCooperatives={loadingCooperatives} cooperativesError={cooperativesError} onCreate={() => navigate('create-listing')} onChangeStatus={handleStatusChange} onPickupHistory={() => navigateUrbanSection('pickup-history')} onEditListing={openEditListing} onDeleteListing={handleDeleteListing} deletingListingId={deletingListingId} onRetry={() => void fetchListings(user.role)} onNavigate={navigateUrbanSection} onLogout={logout} />
+  else if (screen === 'dashboard' && user && dashboardSection === 'profile') content = <><AccountProfilePage user={user} onLogout={logout} /><Footer /></>
+  else if (screen === 'dashboard' && user?.role === 'ADMIN' && dashboardSection !== 'dashboard') content = <><AdminWorkspace key={dashboardSection} section={dashboardSection} /><Footer /></>
+  else if (screen === 'dashboard' && user) content = <RoleDashboard user={user} listings={listings} onCreate={() => navigate('create-listing')} onChangeStatus={handleStatusChange} onRetry={() => void fetchListings(user.role)} busy={loadingListings} error={listingsError} />
   else if (screen === 'create-listing' && user?.role === 'URBAN_WASTE_GENERATOR') content = <><CreateListing user={user} onCancel={() => navigate('dashboard')} onSubmit={handleCreateListing} saving={savingListing} error={listingError} /><Footer /></>
   else if (screen === 'edit-listing' && user?.role === 'URBAN_WASTE_GENERATOR' && listingToEdit) content = <><CreateListing key={listingToEdit.id} user={user} listing={listingToEdit} onCancel={() => { setListingToEdit(null); navigate('dashboard') }} onSubmit={handleUpdateListing} saving={savingListing} error={listingError} /><Footer /></>
   else if (screen === 'dashboard' || screen === 'create-listing' || screen === 'edit-listing') content = <HomePage onJoin={() => navigate('auth-choice')} onListWaste={() => navigate('auth-choice')} />
@@ -526,7 +599,7 @@ export default function App() {
 />
       )}
       <main>
-        {notice && <p className="app-notice" role="status">{notice}</p>}
+        {notice && screen === 'dashboard' && <p className="app-notice" role="status">{notice}</p>}
         {content}
       </main>
     </div>
