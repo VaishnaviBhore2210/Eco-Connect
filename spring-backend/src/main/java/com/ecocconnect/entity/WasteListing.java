@@ -6,7 +6,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "waste_listings")
+@Table(name = "waste_listings", indexes = {
+        @Index(name = "idx_waste_listings_coordinator", columnList = "assigned_coordinator_email")
+})
 public class WasteListing {
 
     @Id
@@ -37,6 +39,17 @@ public class WasteListing {
     // Email of the user who created this waste listing
     @Column(name = "created_by_email")
     private String createdByEmail;
+
+    @Column(name = "assigned_coordinator_email")
+    private String assignedCoordinatorEmail;
+
+    private LocalDateTime scheduledPickupAt;
+
+    private LocalDateTime collectedAt;
+
+    private String processingStatus;
+
+    private LocalDateTime processingUpdatedAt;
 
     private LocalDateTime createdAt;
 
@@ -116,6 +129,46 @@ public class WasteListing {
 
     public void setCreatedByEmail(String createdByEmail) {
         this.createdByEmail = createdByEmail;
+    }
+
+    public String getAssignedCoordinatorEmail() {
+        return assignedCoordinatorEmail;
+    }
+
+    public void setAssignedCoordinatorEmail(String assignedCoordinatorEmail) {
+        this.assignedCoordinatorEmail = assignedCoordinatorEmail;
+    }
+
+    public LocalDateTime getScheduledPickupAt() {
+        return scheduledPickupAt;
+    }
+
+    public void setScheduledPickupAt(LocalDateTime scheduledPickupAt) {
+        this.scheduledPickupAt = scheduledPickupAt;
+    }
+
+    public LocalDateTime getCollectedAt() {
+        return collectedAt;
+    }
+
+    public void setCollectedAt(LocalDateTime collectedAt) {
+        this.collectedAt = collectedAt;
+    }
+
+    public String getProcessingStatus() {
+        return processingStatus;
+    }
+
+    public void setProcessingStatus(String processingStatus) {
+        this.processingStatus = processingStatus;
+    }
+
+    public LocalDateTime getProcessingUpdatedAt() {
+        return processingUpdatedAt;
+    }
+
+    public void setProcessingUpdatedAt(LocalDateTime processingUpdatedAt) {
+        this.processingUpdatedAt = processingUpdatedAt;
     }
 
     public LocalDateTime getCreatedAt() {
