@@ -970,7 +970,13 @@
 .dashboard-list-heading { margin: 34px 0 20px; }
 .dashboard-list-heading h2 { margin: 0; }
 .dashboard-listing-group { margin-top: 22px; }
-.dashboard-listing-group > h3 { margin: 0 0 14px; color: #345047; font-size: 1rem; }
+.dashboard-listing-group > h3 {
+  margin: 0 0 20px;
+  color: #123f32;
+  font-size: 28px;
+  font-weight: 700;
+  text-align: center;
+}
 .empty-state { padding: 40px 24px; text-align: center; }
 .empty-state > span { font-size: 36px; }
 .empty-state h3 { margin-bottom: 8px; }

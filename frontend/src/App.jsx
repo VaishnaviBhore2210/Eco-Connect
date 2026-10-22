@@ -200,7 +200,7 @@ function RoleDashboard({ user, listings, onCreate, onChangeStatus, onPickupHisto
   const listingContent = busy
     ? <p className="form-intro" role="status">Loading waste listings…</p>
     : visibleListings.length === 0
-      ? <div className="empty-state panel-card"><span>♻️</span><h3>No waste listings yet</h3><p>{isCoordinator ? 'New listings from generators will appear here.' : isAdmin ? 'Waste listings from EcoConnect users will appear here.' : 'Create the first listing to start the collection process.'}</p>{role === 'URBAN_WASTE_GENERATOR' && <button className="primary-button" onClick={onCreate}>Create a listing</button>}</div>
+      ? <div className="empty-state panel-card"><span>♻️</span><h3>No waste listings yet</h3><p>{isCoordinator ? 'New listings from generators will appear here.' : isAdmin ? 'Waste listings from EcoConnect users will appear here.' : 'Create the first listing to start the collection process.'}</p></div>
       : <>
           {isUrbanGenerator ? (
             <>
@@ -222,6 +222,19 @@ function RoleDashboard({ user, listings, onCreate, onChangeStatus, onPickupHisto
     )}
   </div>
 </div>
+
+    {isUrbanGenerator && (
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
+        <button
+          type="button"
+          className="primary-button"
+          onClick={onCreate}
+        >
+          + Create listing
+        </button>
+      </div>
+    )}
+
     {listingContent}
   </section><Footer /></>
 }
